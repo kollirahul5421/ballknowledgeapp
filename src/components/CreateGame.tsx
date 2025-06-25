@@ -3,6 +3,8 @@ import { Copy, Users, Clock, ArrowLeft, CheckCircle, Crown } from 'lucide-react'
 import { Room, MAX_PLAYERS } from '../types/game';
 import { GAME_MODES } from '../types/game';
 
+//Check
+
 interface CreateGameProps {
   room: Room;
   playerId: string;
