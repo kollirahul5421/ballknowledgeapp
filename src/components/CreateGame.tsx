@@ -185,6 +185,12 @@ export const CreateGame: React.FC<CreateGameProps> = ({
                 <span className="text-sm font-medium">Ready to move to lobby!</span>
               </div>
             )}
+            {isHost && room.players.filter(p => p.isConnected).length < MAX_PLAYERS && (
+              <div className="mt-2 inline-flex items-center space-x-2 text-blue-600 bg-blue-50 px-4 py-2 rounded-lg">
+                <Users className="w-4 h-4" />
+                <span className="text-sm font-medium">You can still invite more players!</span>
+              </div>
+            )}
             <p className="text-xs text-gray-500 mt-2">
               Room expires in 1 minute if no one joins
             </p>

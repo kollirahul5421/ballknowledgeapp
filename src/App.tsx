@@ -7,7 +7,7 @@ import { GameScreen } from './components/GameScreen';
 import { AdminPage } from './components/AdminPage';
 import { SupabaseRoomManager } from './utils/supabaseRoomManager';
 import { useSupabaseRoomPolling } from './hooks/useSupabaseRoomPolling';
-import { GameState, Room, GameMode } from './types/game';
+import { GameState, Room, GameMode, MAX_PLAYERS } from './types/game';
 
 function App() {
   const [gameState, setGameState] = useState<GameState>({
@@ -57,33 +57,39 @@ function App() {
     }
 
     setGameState(prev => {
-      if (prev.currentView === 'create' && updatedRoom.status === 'lobby') {
-        // Another player joined
-        return {
-          ...prev,
-          currentView: 'lobby',
-          room: updatedRoom
-        };
-      }
-      
-      if (prev.currentView === 'lobby' && updatedRoom.status === 'playing') {
-        // Game started
+      // If game started, move to 'game'
+      if ((prev.currentView === 'create' || prev.currentView === 'lobby') && updatedRoom.status === 'playing') {
         return {
           ...prev,
           currentView: 'game',
           room: updatedRoom
         };
       }
-
+      // If game resets, back to 'lobby'
       if (prev.currentView === 'game' && updatedRoom.status === 'lobby') {
-        // Game reset, back to lobby
         return {
           ...prev,
           currentView: 'lobby',
           room: updatedRoom
         };
       }
-      
+      // If there are 2 or more players and status is 'lobby', move to 'lobby' view
+      if (updatedRoom.status === 'lobby' && updatedRoom.players.length >= 2) {
+        return {
+          ...prev,
+          currentView: 'lobby',
+          room: updatedRoom
+        };
+      }
+      // If less than 2 players, keep in 'create' view
+      if (updatedRoom.players.length < 2 && updatedRoom.status === 'waiting') {
+        return {
+          ...prev,
+          currentView: 'create',
+          room: updatedRoom
+        };
+      }
+      // For all other cases, just update the room data
       return {
         ...prev,
         room: updatedRoom
@@ -97,11 +103,12 @@ function App() {
     2000
   );
 
-  const handleCreateGame = async (gameMode: GameMode = 'all') => {
+  const handleCreateGame = async (gameMode: GameMode = 'all', playerName?: string) => {
     setIsLoading(true);
     try {
+      const nameToUse = playerName || gameState.playerName;
       const roomCode = await roomManager.generateRoomCode();
-      const result = await roomManager.createRoom(roomCode, gameState.playerName, gameMode);
+      const result = await roomManager.createRoom(roomCode, nameToUse, gameMode);
       
       if (result) {
         // Update URL to show room path for easy sharing
@@ -109,7 +116,7 @@ function App() {
         
         setGameState({
           currentView: 'create',
-          playerName: gameState.playerName,
+          playerName: nameToUse,
           playerId: result.playerId,
           roomCode,
           room: result.room
@@ -125,30 +132,56 @@ function App() {
     }
   };
 
-  const handleJoinGame = () => {
+  const handleJoinGame = (playerName?: string) => {
     setJoinError('');
     setGameState(prev => ({
       ...prev,
+      playerName: playerName || prev.playerName,
       currentView: 'join'
     }));
   };
 
-  const handleJoinRoom = async (roomCode: string) => {
+  const handleJoinRoom = async (roomCode: string, playerName?: string) => {
     setIsLoading(true);
     try {
-      const result = await roomManager.joinRoom(roomCode, gameState.playerName);
+      const nameToUse = playerName || gameState.playerName;
+      const result = await roomManager.joinRoom(roomCode, nameToUse);
       
-      if (!result) {
-        setJoinError('Room not found, full, or already started. Please check the code and try again.');
+      if ('error' in result) {
+        switch (result.error) {
+          case 'not_found':
+            setJoinError('Room not found. Please check the code and try again.');
+            break;
+          case 'full':
+            setJoinError(`Room is full (maximum ${MAX_PLAYERS} players). Please try another room.`);
+            break;
+          case 'already_started':
+            setJoinError('This game has already started. Please join a different room.');
+            break;
+          case 'unknown':
+          default:
+            setJoinError('Failed to join room. Please try again.');
+            break;
+        }
         return;
       }
 
       // Update URL to show room path
       window.history.pushState({}, document.title, `/room/${roomCode}`);
 
+      // Determine the view based on room status and player count
+      let targetView: 'create' | 'lobby' | 'game';
+      if (result.room.status === 'playing') {
+        targetView = 'game';
+      } else if (result.room.status === 'lobby' || result.room.players.length >= 2) {
+        targetView = 'lobby';
+      } else {
+        targetView = 'create';
+      }
+
       setGameState({
-        currentView: result.room.status === 'waiting' ? 'create' : 'lobby',
-        playerName: gameState.playerName,
+        currentView: targetView,
+        playerName: nameToUse,
         playerId: result.playerId,
         roomCode,
         room: result.room

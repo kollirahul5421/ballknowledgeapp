@@ -5,8 +5,8 @@ import { GameMode, GAME_MODES } from '../types/game';
 interface HomePageProps {
   playerName: string;
   setPlayerName: (name: string) => void;
-  onCreateGame: (gameMode: GameMode) => void;
-  onJoinGame: () => void;
+  onCreateGame: (gameMode: GameMode, playerName: string) => void;
+  onJoinGame: (playerName: string) => void;
   onShowAdmin: () => void;
   isLoading?: boolean;
 }
@@ -24,13 +24,15 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [showGameModeSelector, setShowGameModeSelector] = useState(false);
 
   const handleCreateGame = () => {
-    setPlayerName(inputValue.trim() || 'Player 1');
-    onCreateGame(selectedGameMode);
+    const name = inputValue.trim() || 'Player 1';
+    setPlayerName(name);
+    onCreateGame(selectedGameMode, name);
   };
 
   const handleJoinGame = () => {
-    setPlayerName(inputValue.trim() || 'Player 2');
-    onJoinGame();
+    const name = inputValue.trim() || 'Player 2';
+    setPlayerName(name);
+    onJoinGame(name);
   };
 
   const handleGameModeSelect = (mode: GameMode) => {

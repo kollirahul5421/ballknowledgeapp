@@ -3,7 +3,7 @@ import { ArrowLeft, Users, AlertCircle } from 'lucide-react';
 
 interface JoinGameProps {
   onBack: () => void;
-  onJoinRoom: (roomCode: string) => void;
+  onJoinRoom: (roomCode: string, playerName: string) => void;
   error?: string;
   isLoading?: boolean;
   prefilledRoomCode?: string;
@@ -33,10 +33,9 @@ export const JoinGame: React.FC<JoinGameProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (roomCode.length !== 5 || isLoading) return;
-    
-    // Set the player name before joining
-    setPlayerName(displayName.trim() || 'Player 2');
-    onJoinRoom(roomCode.toUpperCase());
+    const name = displayName.trim() || 'Player 2';
+    setPlayerName(name);
+    onJoinRoom(roomCode.toUpperCase(), name);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

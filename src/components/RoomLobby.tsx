@@ -1,5 +1,5 @@
-import React from 'react';
-import { Users, CheckCircle, Clock, Play, ArrowLeft, Crown, UserX } from 'lucide-react';
+import React, { useState } from 'react';
+import { Users, CheckCircle, Clock, Play, ArrowLeft, Crown, UserX, Copy } from 'lucide-react';
 import { Room, MAX_PLAYERS } from '../types/game';
 import { GAME_MODES } from '../types/game';
 
@@ -22,6 +22,8 @@ export const RoomLobby: React.FC<RoomLobbyProps> = ({
   onLeaveRoom,
   isLoading = false
 }) => {
+  const [copied, setCopied] = useState(false);
+  const shareableLink = `${window.location.origin}/room/${room.code}`;
   const isCurrentPlayerReady = room.playersReady[playerId] || false;
   const connectedPlayers = room.players.filter(p => p.isConnected);
   const allConnectedReady = connectedPlayers.every(p => room.playersReady[p.id]);
@@ -33,6 +35,24 @@ export const RoomLobby: React.FC<RoomLobbyProps> = ({
       onStartGame();
     }
   }, [allConnectedReady, room.status, connectedPlayers.length, onStartGame]);
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(shareableLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = shareableLink;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
@@ -56,6 +76,30 @@ export const RoomLobby: React.FC<RoomLobbyProps> = ({
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-1">Game Lobby</h2>
             <p className="text-gray-600">Room Code: <span className="font-mono font-bold">{room.code}</span></p>
+          </div>
+
+          {/* Share Link UI */}
+          <div className="bg-gray-50 rounded-xl p-6 mb-6">
+            <div className="text-center">
+              <p className="text-sm font-medium text-gray-700 mb-2">Share Room Link</p>
+              <div className="text-xs font-mono text-blue-600 break-all mb-4">{shareableLink}</div>
+              <button
+                onClick={copyToClipboard}
+                className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                {copied ? (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>Copy Link</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Game Mode Display */}

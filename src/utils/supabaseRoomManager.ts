@@ -95,11 +95,19 @@ export class SupabaseRoomManager {
     }
   }
 
-  async joinRoom(roomCode: string, playerName: string): Promise<{ room: Room; playerId: string } | null> {
+  async joinRoom(roomCode: string, playerName: string): Promise<{ room: Room; playerId: string } | { error: 'not_found' | 'full' | 'already_started' | 'unknown' }> {
     try {
       const room = await this.getRoomByCode(roomCode);
-      if (!room || room.status !== 'waiting' || room.players.length >= MAX_PLAYERS) {
-        return null;
+      if (!room) {
+        return { error: 'not_found' };
+      }
+      
+      if (room.status === 'playing' || room.status === 'finished') {
+        return { error: 'already_started' };
+      }
+      
+      if (room.players.length >= MAX_PLAYERS) {
+        return { error: 'full' };
       }
 
       const playerId = this.generatePlayerId();
@@ -123,7 +131,6 @@ export class SupabaseRoomManager {
         host_player_id: room.hostPlayerId
       };
 
-      // Update with backwards compatibility
       const updateData: any = {
         status: roomData.status,
         game_state: JSON.stringify(roomData)
@@ -143,14 +150,14 @@ export class SupabaseRoomManager {
 
       if (error) {
         console.error('Error joining room:', error);
-        return null;
+        return { error: 'unknown' };
       }
 
       const updatedRoom = this.mapSupabaseToRoom(data);
       return { room: updatedRoom, playerId };
     } catch (error) {
       console.error('Error joining room:', error);
-      return null;
+      return { error: 'unknown' };
     }
   }
 
@@ -178,10 +185,11 @@ export class SupabaseRoomManager {
         
         try {
           const activePlayers = room.players.filter(p => p.isConnected);
-          const gameState = await this.gameEngine.initializeGame(room.gameMode || 'all', activePlayers);
+          let gameState = await this.gameEngine.initializeGame(room.gameMode || 'all', activePlayers);
+          gameState = { ...gameState, players: room.players };
           roomData.status = 'playing';
           roomData.game_state = gameState;
-          roomData.locked_players = activePlayers; // Lock in the players
+          roomData.locked_players = activePlayers;
           console.log('Game state initialized:', gameState);
         } catch (gameError) {
           console.error('Error initializing game:', gameError);
@@ -269,7 +277,7 @@ export class SupabaseRoomManager {
         return null;
       }
 
-      const updatedGameState = this.gameEngine.submitGuess(room.gameState, playerId, guess);
+      const updatedGameState = { ...this.gameEngine.submitGuess(room.gameState, playerId, guess), players: room.players };
 
       const roomData = {
         code: room.code,
@@ -310,7 +318,7 @@ export class SupabaseRoomManager {
         return null;
       }
 
-      let updatedGameState = this.gameEngine.setPlayerReady(room.gameState, playerId);
+      let updatedGameState = { ...this.gameEngine.setPlayerReady(room.gameState, playerId), players: room.players };
       
       // Check if all connected players are ready for next round
       const connectedPlayers = room.players.filter(p => p.isConnected);
@@ -318,7 +326,7 @@ export class SupabaseRoomManager {
       
       if (allReady && !updatedGameState.gameWinner) {
         try {
-          updatedGameState = await this.gameEngine.startNextRound(updatedGameState, room.gameMode || 'all');
+          updatedGameState = { ...await this.gameEngine.startNextRound(updatedGameState, room.gameMode || 'all'), players: room.players };
         } catch (nextRoundError) {
           console.error('Error starting next round:', nextRoundError);
         }
