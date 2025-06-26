@@ -68,23 +68,6 @@ export const CreateGame: React.FC<CreateGameProps> = ({
             <p className="text-gray-600">Share your room link with friends</p>
           </div>
 
-          {/* Game Mode Display */}
-          {selectedGameMode && (
-            <div className="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-200">
-              <div className="text-center">
-                <p className="text-sm font-medium text-blue-700 mb-1">Game Mode</p>
-                <div className="text-lg font-bold text-blue-800">
-                  {selectedGameMode.label}
-                </div>
-                {room.gameMode !== 'all' && (
-                  <p className="text-xs text-blue-600 mt-1">
-                    Players from the {room.gameMode}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Room Code Display */}
           <div className="bg-gray-50 rounded-xl p-6 mb-6">
             <div className="text-center">
@@ -150,7 +133,7 @@ export const CreateGame: React.FC<CreateGameProps> = ({
                     </span>
                   )}
                   {player.id === room.hostPlayerId && (
-                    <Crown className="w-4 h-4 text-yellow-600" title="Host" />
+                    <Crown className="w-4 h-4 text-yellow-600" />
                   )}
                 </div>
                 <div className="text-xs text-gray-500">

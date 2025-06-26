@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { Users, Plus, LogIn, Trophy, Settings } from 'lucide-react';
-import { GameMode, GAME_MODES } from '../types/game';
+import React, { useState, useRef, useEffect } from 'react';
+import { Users, Plus, LogIn, Trophy, Settings, ChevronDown } from 'lucide-react';
+import { Decade, DECADES } from '../types/game';
 
 interface HomePageProps {
   playerName: string;
   setPlayerName: (name: string) => void;
-  onCreateGame: (gameMode: GameMode, playerName: string) => void;
+  onCreateGame: (decades: Decade[] | 'all', playerName: string) => void;
   onJoinGame: (playerName: string) => void;
   onShowAdmin: () => void;
   isLoading?: boolean;
@@ -20,13 +20,29 @@ export const HomePage: React.FC<HomePageProps> = ({
   isLoading = false
 }) => {
   const [inputValue, setInputValue] = useState(playerName);
-  const [selectedGameMode, setSelectedGameMode] = useState<GameMode>('all');
-  const [showGameModeSelector, setShowGameModeSelector] = useState(false);
+  const [selectedDecades, setSelectedDecades] = useState<Decade[]>([]); // empty = all
+  const [showDecadeDropdown, setShowDecadeDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDecadeDropdown(false);
+      }
+    }
+    if (showDecadeDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showDecadeDropdown]);
 
   const handleCreateGame = () => {
     const name = inputValue.trim() || 'Player 1';
     setPlayerName(name);
-    onCreateGame(selectedGameMode, name);
+    onCreateGame(selectedDecades.length === 0 ? 'all' : selectedDecades, name);
   };
 
   const handleJoinGame = () => {
@@ -35,10 +51,30 @@ export const HomePage: React.FC<HomePageProps> = ({
     onJoinGame(name);
   };
 
-  const handleGameModeSelect = (mode: GameMode) => {
-    setSelectedGameMode(mode);
-    setShowGameModeSelector(false);
+  const handleDecadeChange = (decade: Decade) => {
+    setSelectedDecades(prev => {
+      if (prev.length === 0) {
+        // If 'All Players' was selected, start a new selection
+        return [decade];
+      }
+      return prev.includes(decade)
+        ? prev.filter(d => d !== decade)
+        : [...prev, decade];
+    });
   };
+
+  const handleAllChange = () => {
+    setSelectedDecades([]);
+  };
+
+  const handleDone = () => {
+    setShowDecadeDropdown(false);
+  };
+
+  const selectedLabel =
+    selectedDecades.length === 0
+      ? 'All Players'
+      : DECADES.filter(d => selectedDecades.includes(d.value)).map(d => d.label).join(', ');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
@@ -76,49 +112,53 @@ export const HomePage: React.FC<HomePageProps> = ({
               </p>
             </div>
 
-            {/* Game Mode Selector */}
-            <div>
+            {/* Decade Selector (Dropdown with Checkboxes) */}
+            <div className="relative" ref={dropdownRef}>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Game Mode
+                Decades
               </label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowGameModeSelector(!showGameModeSelector)}
-                  disabled={isLoading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-left bg-white disabled:opacity-50"
-                >
-                  <span className="text-gray-900">
-                    {GAME_MODES.find(mode => mode.value === selectedGameMode)?.label}
-                  </span>
-                  <span className="absolute inset-y-0 right-0 flex items-center pr-3">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </span>
-                </button>
-                
-                {showGameModeSelector && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg">
-                    {GAME_MODES.map((mode) => (
-                      <button
-                        key={mode.value}
-                        onClick={() => handleGameModeSelect(mode.value)}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors first:rounded-t-xl last:rounded-b-xl"
-                      >
-                        <span className="text-gray-900">{mode.label}</span>
-                        {mode.value !== 'all' && (
-                          <span className="text-xs text-gray-500 block">
-                            Players from the {mode.value}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowDecadeDropdown((v) => !v)}
+                disabled={isLoading}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-left bg-white flex items-center justify-between disabled:opacity-50"
+              >
+                <span className="text-gray-900 truncate">{selectedLabel}</span>
+                <ChevronDown className="w-5 h-5 text-gray-400 ml-2" />
+              </button>
+              {showDecadeDropdown && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg p-4 flex flex-col gap-2">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedDecades.length === 0}
+                      onChange={handleAllChange}
+                      disabled={isLoading}
+                    />
+                    <span className="ml-2">All Players</span>
+                  </label>
+                  {DECADES.map(decade => (
+                    <label key={decade.value} className="inline-flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedDecades.includes(decade.value)}
+                        onChange={() => handleDecadeChange(decade.value)}
+                        disabled={isLoading}
+                      />
+                      <span className="ml-2">{decade.label}</span>
+                    </label>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handleDone}
+                    className="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200"
+                  >
+                    Done
+                  </button>
+                </div>
+              )}
               <p className="text-xs text-gray-500 mt-1">
-                Choose which era of players to include in your game
+                Choose which eras of players to include in your game. Selecting none means all decades.
               </p>
             </div>
 

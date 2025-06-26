@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { Player, CreatePlayerRequest, UpdatePlayerRequest } from '../types/player';
-import { GameMode } from '../types/game';
+import { GameMode, DecadeSelection } from '../types/game';
 
 export class PlayerManager {
   private static instance: PlayerManager;
@@ -117,13 +117,13 @@ export class PlayerManager {
     }
   }
 
-  async getRandomPlayer(excludeIds: string[] = [], gameMode: GameMode = 'all'): Promise<Player | null> {
+  async getRandomPlayer(excludeIds: string[] = [], decadeSelection: DecadeSelection): Promise<Player | null> {
     try {
       let query = supabase.from('players').select('*');
       
       // Apply decade filter if not 'all'
-      if (gameMode !== 'all') {
-        query = query.eq('primary_decade', gameMode);
+      if (!decadeSelection.all && decadeSelection.decades.length > 0) {
+        query = query.in('primary_decade', decadeSelection.decades);
       }
       
       if (excludeIds.length > 0) {
@@ -138,11 +138,11 @@ export class PlayerManager {
       }
 
       if (!data || data.length === 0) {
-        // If no players available (all excluded), get any random player from the decade
+        // If no players available (all excluded), get any random player from the selected decades
         let fallbackQuery = supabase.from('players').select('*');
         
-        if (gameMode !== 'all') {
-          fallbackQuery = fallbackQuery.eq('primary_decade', gameMode);
+        if (!decadeSelection.all && decadeSelection.decades.length > 0) {
+          fallbackQuery = fallbackQuery.in('primary_decade', decadeSelection.decades);
         }
         
         const { data: allData, error: allError } = await fallbackQuery;
@@ -161,6 +161,15 @@ export class PlayerManager {
       console.error('Error getting random player:', error);
       return null;
     }
+  }
+
+  // Backward compatibility method
+  async getRandomPlayerLegacy(excludeIds: string[] = [], gameMode: GameMode = 'all'): Promise<Player | null> {
+    const decadeSelection: DecadeSelection = {
+      all: gameMode === 'all',
+      decades: gameMode === 'all' ? [] : [gameMode as any]
+    };
+    return this.getRandomPlayer(excludeIds, decadeSelection);
   }
 
   async getPlayersByDecade(decade: string): Promise<Player[]> {

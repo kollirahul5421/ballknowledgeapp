@@ -1,6 +1,7 @@
 import { PlayerManager } from './playerManager';
 import { Player as DBPlayer } from '../types/player';
 import { GameRound, GameMode, Player, WINNING_SCORE } from '../types/game';
+import { Decade } from '../types/game';
 
 export class SupabaseGameEngine {
   private static instance: SupabaseGameEngine;
@@ -17,16 +18,17 @@ export class SupabaseGameEngine {
     this.playerManager = PlayerManager.getInstance();
   }
 
-  async initializeGame(gameMode: GameMode = 'all', players: Player[]): Promise<GameRound> {
-    console.log('Initializing game with mode:', gameMode, 'players:', players);
+  async initializeGame(decades: Decade[] | 'all', players: Player[]): Promise<GameRound> {
+    console.log('Initializing game with decades:', decades, 'players:', players);
     
     try {
-      const firstPlayer = await this.playerManager.getRandomPlayer([], gameMode);
+      const decadeSelection = decades === 'all' ? { all: true, decades: [] } : { all: false, decades };
+      const firstPlayer = await this.playerManager.getRandomPlayer([], decadeSelection);
       
       if (!firstPlayer) {
-        const errorMsg = gameMode === 'all' 
+        const errorMsg = decades === 'all' 
           ? 'No players available in the database' 
-          : `No players available for the ${gameMode} era`;
+          : `No players available for the selected decades`;
         console.error(errorMsg);
         throw new Error(errorMsg);
       }
@@ -36,11 +38,13 @@ export class SupabaseGameEngine {
       // Initialize scores and ready states for all players
       const scores: Record<string, number> = {};
       const readyForNext: Record<string, boolean> = {};
+      const skipVotes: Record<string, boolean> = {};
       const activePlayers: string[] = [];
 
       players.forEach(player => {
         scores[player.id] = 0;
         readyForNext[player.id] = false;
+        skipVotes[player.id] = false;
         if (player.isConnected) {
           activePlayers.push(player.id);
         }
@@ -56,10 +60,12 @@ export class SupabaseGameEngine {
         roundNumber: 1,
         scores,
         usedPlayerIds: [firstPlayer.id],
-        roundState: 'guessing',
+        roundState: 'round-transition',
+        roundTransitionTimestamp: Date.now(),
         guesses: {},
         guessTimestamps: {},
         readyForNext,
+        skipVotes,
         activePlayers
       };
 
@@ -113,13 +119,13 @@ export class SupabaseGameEngine {
         updatedGameState.gameWinner = playerId;
       }
     } else {
-      // Check if all active players have guessed
-      const activePlayersWhoGuessed = gameState.activePlayers.filter(pid => 
-        updatedGameState.guesses[pid] !== undefined
+      // Check if all active players have either guessed or voted to skip
+      const allPlayersHaveActed = gameState.activePlayers.every(pid => 
+        updatedGameState.guesses[pid] !== undefined || updatedGameState.skipVotes[pid]
       );
       
-      if (activePlayersWhoGuessed.length === gameState.activePlayers.length) {
-        // All active players guessed incorrectly, reveal answer
+      if (allPlayersHaveActed) {
+        // All active players have acted, reveal answer
         updatedGameState.roundState = 'revealed';
         updatedGameState.correctGuesser = null;
       }
@@ -142,20 +148,21 @@ export class SupabaseGameEngine {
     return updatedGameState;
   }
 
-  async startNextRound(gameState: GameRound, gameMode: GameMode = 'all'): Promise<GameRound> {
-    console.log('Starting next round with mode:', gameMode, 'used players:', gameState.usedPlayerIds);
+  async startNextRound(gameState: GameRound, decades: Decade[] | 'all' = 'all'): Promise<GameRound> {
+    console.log('Starting next round with decades:', decades, 'used players:', gameState.usedPlayerIds);
     
     try {
-      const nextPlayer = await this.playerManager.getRandomPlayer(gameState.usedPlayerIds, gameMode);
+      const decadeSelection = decades === 'all' ? { all: true, decades: [] } : { all: false, decades };
+      const nextPlayer = await this.playerManager.getRandomPlayer(gameState.usedPlayerIds, decadeSelection);
       
       if (!nextPlayer) {
         console.warn('No more unique players available, resetting used players list');
-        const fallbackPlayer = await this.playerManager.getRandomPlayer([], gameMode);
+        const fallbackPlayer = await this.playerManager.getRandomPlayer([], decadeSelection);
         
         if (!fallbackPlayer) {
-          const errorMsg = gameMode === 'all' 
+          const errorMsg = decades === 'all' 
             ? 'No players available in the database' 
-            : `No players available for the ${gameMode} era`;
+            : `No players available for the selected decades`;
           throw new Error(errorMsg);
         }
         
@@ -163,8 +170,10 @@ export class SupabaseGameEngine {
         
         // Reset ready states for all active players
         const resetReadyForNext: Record<string, boolean> = {};
+        const resetSkipVotes: Record<string, boolean> = {};
         gameState.activePlayers.forEach(pid => {
           resetReadyForNext[pid] = false;
+          resetSkipVotes[pid] = false;
         });
         
         return {
@@ -177,11 +186,13 @@ export class SupabaseGameEngine {
           },
           roundNumber: gameState.roundNumber + 1,
           usedPlayerIds: [fallbackPlayer.id],
-          roundState: 'guessing',
+          roundState: 'round-transition',
+          roundTransitionTimestamp: Date.now(),
           correctGuesser: undefined,
           guesses: {},
           guessTimestamps: {},
-          readyForNext: resetReadyForNext
+          readyForNext: resetReadyForNext,
+          skipVotes: resetSkipVotes
         };
       }
 
@@ -189,8 +200,10 @@ export class SupabaseGameEngine {
       
       // Reset ready states for all active players
       const resetReadyForNext: Record<string, boolean> = {};
+      const resetSkipVotes: Record<string, boolean> = {};
       gameState.activePlayers.forEach(pid => {
         resetReadyForNext[pid] = false;
+        resetSkipVotes[pid] = false;
       });
       
       return {
@@ -203,16 +216,100 @@ export class SupabaseGameEngine {
         },
         roundNumber: gameState.roundNumber + 1,
         usedPlayerIds: [...gameState.usedPlayerIds, nextPlayer.id],
-        roundState: 'guessing',
+        roundState: 'round-transition',
+        roundTransitionTimestamp: Date.now(),
         correctGuesser: undefined,
         guesses: {},
         guessTimestamps: {},
-        readyForNext: resetReadyForNext
+        readyForNext: resetReadyForNext,
+        skipVotes: resetSkipVotes
       };
     } catch (error) {
       console.error('Error in startNextRound:', error);
       throw error;
     }
+  }
+
+  skipRound(gameState: GameRound): GameRound {
+    if (gameState.roundState !== 'guessing') {
+      return gameState;
+    }
+
+    // Skip works the same as both players guessing incorrectly
+    return {
+      ...gameState,
+      roundState: 'revealed',
+      correctGuesser: null
+    };
+  }
+
+  voteToSkip(gameState: GameRound, playerId: string): GameRound {
+    if (gameState.roundState !== 'guessing' || !gameState.activePlayers.includes(playerId)) {
+      return gameState;
+    }
+
+    const updatedGameState = { ...gameState };
+    updatedGameState.skipVotes = {
+      ...updatedGameState.skipVotes,
+      [playerId]: true
+    };
+
+    // Check if all active players have either guessed or voted to skip
+    const allPlayersHaveActed = gameState.activePlayers.every(pid => 
+      updatedGameState.guesses[pid] !== undefined || updatedGameState.skipVotes[pid]
+    );
+
+    if (allPlayersHaveActed) {
+      // All players have either guessed or voted to skip, reveal the answer
+      updatedGameState.roundState = 'revealed';
+      
+      // Check if anyone guessed correctly
+      const correctGuesser = gameState.activePlayers.find(pid => 
+        updatedGameState.guesses[pid] && this.isCorrectGuess(updatedGameState.guesses[pid], gameState.currentPlayer.name)
+      );
+      
+      if (correctGuesser) {
+        updatedGameState.correctGuesser = correctGuesser;
+        // Update score for correct guesser
+        updatedGameState.scores = {
+          ...updatedGameState.scores,
+          [correctGuesser]: (updatedGameState.scores[correctGuesser] || 0) + 1
+        };
+        
+        // Check for game winner
+        if (updatedGameState.scores[correctGuesser] >= WINNING_SCORE) {
+          updatedGameState.gameWinner = correctGuesser;
+        }
+      } else {
+        updatedGameState.correctGuesser = null;
+      }
+    }
+
+    return updatedGameState;
+  }
+
+  /**
+   * Transition from round-transition to guessing state after a synchronized delay
+   */
+  transitionToGuessing(gameState: GameRound): GameRound {
+    if (gameState.roundState !== 'round-transition') {
+      return gameState;
+    }
+
+    const transitionDelay = 2000; // 2 seconds
+    const now = Date.now();
+    const transitionStart = gameState.roundTransitionTimestamp || now;
+    
+    // Only transition if enough time has passed
+    if (now - transitionStart >= transitionDelay) {
+      return {
+        ...gameState,
+        roundState: 'guessing',
+        roundTransitionTimestamp: undefined
+      };
+    }
+
+    return gameState;
   }
 
   async resetGame(gameMode: GameMode = 'all', players: Player[]): Promise<GameRound> {

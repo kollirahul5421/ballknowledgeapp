@@ -18,6 +18,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 }) => {
   const [guess, setGuess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
   const roomManager = SupabaseRoomManager.getInstance();
 
@@ -35,10 +36,44 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
   // Clear guess when new round starts
   useEffect(() => {
-    if (gameState?.roundState === 'guessing') {
-      setGuess('');
-    }
+    setGuess('');
   }, [gameState?.roundNumber]);
+
+  // Set image loading when entering guessing state
+  useEffect(() => {
+    if (gameState?.roundState === 'guessing') {
+      setImageLoading(true);
+    }
+  }, [gameState?.roundState]);
+
+  // Handle round transitions
+  useEffect(() => {
+    if (gameState?.roundState === 'round-transition') {
+      // Check for transition every 100ms
+      const interval = setInterval(async () => {
+        try {
+          const updatedRoom = await roomManager.checkAndTransitionRound(room.code);
+          if (updatedRoom) {
+            onRoomUpdate(updatedRoom);
+          }
+        } catch (error) {
+          console.error('Error checking round transition:', error);
+        }
+      }, 100);
+
+      return () => clearInterval(interval);
+    }
+  }, [gameState?.roundState, room.code, roomManager, onRoomUpdate]);
+
+  // Handle image load
+  const handleImageLoad = () => {
+    setImageLoading(false);
+  };
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src = "https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg?auto=compress&cs=tinysrgb&w=400";
+    setImageLoading(false);
+  };
 
   const handleSubmitGuess = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +105,19 @@ export const GameScreen: React.FC<GameScreenProps> = ({
       }
     } catch (error) {
       console.error('Error setting ready for next:', error);
+    }
+  };
+
+  const handleSkipRound = async () => {
+    if (!gameState || gameState.roundState !== 'guessing') return;
+    
+    try {
+      const updatedRoom = await roomManager.skipRound(room.code, playerId);
+      if (updatedRoom) {
+        onRoomUpdate(updatedRoom);
+      }
+    } catch (error) {
+      console.error('Error voting to skip round:', error);
     }
   };
 
@@ -303,14 +351,22 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           {/* Player Image */}
           <div className="text-center mb-6">
             <div className="inline-block relative">
-              <img
-                src={gameState.currentPlayer.imageUrl}
-                alt="NBA Player"
-                className="w-64 h-64 md:w-80 md:h-80 object-cover rounded-2xl shadow-lg"
-                onError={(e) => {
-                  e.currentTarget.src = "https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg?auto=compress&cs=tinysrgb&w=400";
-                }}
-              />
+              {imageLoading && (
+                <div className="absolute inset-0 bg-gray-200 rounded-2xl flex items-center justify-center">
+                  <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                </div>
+              )}
+              {gameState.roundState !== 'round-transition' && (
+                <img
+                  src={gameState.currentPlayer.imageUrl}
+                  alt="NBA Player"
+                  className={`w-64 h-64 md:w-80 md:h-80 object-cover rounded-2xl shadow-lg transition-opacity duration-300 ${
+                    imageLoading ? 'opacity-0' : 'opacity-100'
+                  }`}
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                />
+              )}
               {gameState.roundState === 'revealed' && (
                 <div className="absolute inset-0 bg-black bg-opacity-50 rounded-2xl flex items-center justify-center">
                   <div className="text-white text-center p-4">
@@ -321,6 +377,16 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               )}
             </div>
           </div>
+
+          {gameState.roundState === 'round-transition' && (
+            <div className="text-center">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-8">
+                <div className="animate-spin w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <h3 className="text-2xl font-bold text-blue-800 mb-2">Preparing Next Round</h3>
+                <p className="text-blue-700">Round {gameState.roundNumber}</p>
+              </div>
+            </div>
+          )}
 
           {gameState.roundState === 'guessing' && (
             <>
@@ -356,7 +422,22 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                 </div>
               </form>
 
-              {/* Show who has guessed */}
+              {/* Skip Button */}
+              <div className="text-center mb-4">
+                <button
+                  onClick={handleSkipRound}
+                  disabled={isSubmitting || gameState.skipVotes[playerId]}
+                  className={`font-semibold px-6 py-2 rounded-xl transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg hover:shadow-xl disabled:shadow-none ${
+                    gameState.skipVotes[playerId]
+                      ? 'bg-green-500 text-white cursor-not-allowed'
+                      : 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 disabled:from-gray-400 disabled:to-gray-500 text-white'
+                  }`}
+                >
+                  {gameState.skipVotes[playerId] ? 'Voted to Skip' : 'Skip Question'}
+                </button>
+              </div>
+
+              {/* Show who has guessed and who has voted to skip */}
               <div className="text-center mb-4">
                 <div className="flex flex-wrap justify-center gap-2">
                   {connectedPlayers.map(player => (
@@ -365,12 +446,16 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                       className={`inline-flex items-center space-x-2 px-3 py-1 rounded-lg text-sm ${
                         gameState.guesses[player.id]
                           ? 'text-green-600 bg-green-50'
+                          : gameState.skipVotes[player.id]
+                          ? 'text-orange-600 bg-orange-50'
                           : 'text-gray-600 bg-gray-50'
                       }`}
                     >
                       <span>{player.name}</span>
                       {gameState.guesses[player.id] ? (
                         <CheckCircle className="w-4 h-4" />
+                      ) : gameState.skipVotes[player.id] ? (
+                        <span className="text-orange-600">⏭️</span>
                       ) : (
                         <Clock className="w-4 h-4" />
                       )}

@@ -7,7 +7,7 @@ import { GameScreen } from './components/GameScreen';
 import { AdminPage } from './components/AdminPage';
 import { SupabaseRoomManager } from './utils/supabaseRoomManager';
 import { useSupabaseRoomPolling } from './hooks/useSupabaseRoomPolling';
-import { GameState, Room, GameMode, MAX_PLAYERS } from './types/game';
+import { GameState, Room, GameMode, MAX_PLAYERS, Decade } from './types/game';
 
 function App() {
   const [gameState, setGameState] = useState<GameState>({
@@ -103,12 +103,12 @@ function App() {
     2000
   );
 
-  const handleCreateGame = async (gameMode: GameMode = 'all', playerName?: string) => {
+  const handleCreateGame = async (decades: Decade[] | 'all', playerName?: string) => {
     setIsLoading(true);
     try {
       const nameToUse = playerName || gameState.playerName;
       const roomCode = await roomManager.generateRoomCode();
-      const result = await roomManager.createRoom(roomCode, nameToUse, gameMode);
+      const result = await roomManager.createRoom(roomCode, nameToUse, decades);
       
       if (result) {
         // Update URL to show room path for easy sharing

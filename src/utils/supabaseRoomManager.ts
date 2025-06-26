@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Room, GameRound, GameMode, Player, MAX_PLAYERS } from '../types/game';
+import { Room, GameRound, GameMode, Player, MAX_PLAYERS, Decade } from '../types/game';
 import { SupabaseGameEngine } from './supabaseGameEngine';
 
 const ROOM_EXPIRY_WAITING = 60 * 1000; // 1 minute
@@ -48,8 +48,9 @@ export class SupabaseRoomManager {
     return `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  async createRoom(roomCode: string, playerName: string, gameMode: GameMode = 'all'): Promise<{ room: Room; playerId: string } | null> {
+  async createRoom(roomCode: string, playerName: string, decades: Decade[] | 'all'): Promise<{ room: Room; playerId: string } | null> {
     try {
+      console.log('[DEBUG] Creating room with decades:', decades);
       const playerId = this.generatePlayerId();
       const player: Player = {
         id: playerId,
@@ -64,7 +65,8 @@ export class SupabaseRoomManager {
         status: 'waiting' as const,
         players_ready: { [playerId]: false },
         game_state: null,
-        game_mode: gameMode,
+        decades: decades === 'all' ? [] : decades,
+        game_mode: 'all', // for compatibility
         host_player_id: playerId
       };
 
@@ -77,7 +79,8 @@ export class SupabaseRoomManager {
           player1_ready: false,
           player2_ready: false,
           game_state: JSON.stringify(roomData),
-          game_mode: gameMode
+          game_mode: 'all', // for compatibility
+          decades: decades === 'all' ? [] : decades
         })
         .select()
         .single();
@@ -87,7 +90,7 @@ export class SupabaseRoomManager {
         return null;
       }
 
-      const room = this.mapSupabaseToRoom(data);
+      const room = this.mapSupabaseToRoom({ ...data, decades: decades === 'all' ? [] : decades });
       return { room, playerId };
     } catch (error) {
       console.error('Error creating room:', error);
@@ -181,11 +184,11 @@ export class SupabaseRoomManager {
       };
 
       if (allReady && room.status === 'lobby' && room.players.filter(p => p.isConnected).length >= 2) {
-        console.log('All players ready, initializing game with mode:', room.gameMode);
+        console.log('All players ready, initializing game with decades:', room.decades);
         
         try {
           const activePlayers = room.players.filter(p => p.isConnected);
-          let gameState = await this.gameEngine.initializeGame(room.gameMode || 'all', activePlayers);
+          let gameState = await this.gameEngine.initializeGame(room.decades || 'all', activePlayers);
           gameState = { ...gameState, players: room.players };
           roomData.status = 'playing';
           roomData.game_state = gameState;
@@ -326,7 +329,7 @@ export class SupabaseRoomManager {
       
       if (allReady && !updatedGameState.gameWinner) {
         try {
-          updatedGameState = { ...await this.gameEngine.startNextRound(updatedGameState, room.gameMode || 'all'), players: room.players };
+          updatedGameState = { ...await this.gameEngine.startNextRound(updatedGameState, room.decades || 'all'), players: room.players };
         } catch (nextRoundError) {
           console.error('Error starting next round:', nextRoundError);
         }
@@ -367,6 +370,89 @@ export class SupabaseRoomManager {
       return this.mapSupabaseToRoom(data);
     } catch (error) {
       console.error('Error setting player ready for next:', error);
+      return null;
+    }
+  }
+
+  async skipRound(roomCode: string, playerId: string): Promise<Room | null> {
+    try {
+      const room = await this.getRoomByCode(roomCode);
+      if (!room || !room.gameState) return null;
+
+      const updatedGameState = this.gameEngine.voteToSkip(room.gameState, playerId);
+      
+      const roomData = {
+        code: room.code,
+        players: room.players,
+        status: room.status,
+        players_ready: room.playersReady,
+        game_state: updatedGameState,
+        game_mode: room.gameMode,
+        host_player_id: room.hostPlayerId,
+        locked_players: room.lockedPlayers
+      };
+
+      const { data, error } = await supabase
+        .from('rooms')
+        .update({
+          game_state: JSON.stringify(roomData)
+        })
+        .eq('code', roomCode)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error voting to skip round:', error);
+        return null;
+      }
+
+      return this.mapSupabaseToRoom(data);
+    } catch (error) {
+      console.error('Error voting to skip round:', error);
+      return null;
+    }
+  }
+
+  async checkAndTransitionRound(roomCode: string): Promise<Room | null> {
+    try {
+      const room = await this.getRoomByCode(roomCode);
+      if (!room || !room.gameState) return null;
+
+      const updatedGameState = this.gameEngine.transitionToGuessing(room.gameState);
+      
+      // Only update if the state actually changed
+      if (updatedGameState.roundState !== room.gameState.roundState) {
+        const roomData = {
+          code: room.code,
+          players: room.players,
+          status: room.status,
+          players_ready: room.playersReady,
+          game_state: updatedGameState,
+          game_mode: room.gameMode,
+          host_player_id: room.hostPlayerId,
+          locked_players: room.lockedPlayers
+        };
+
+        const { data, error } = await supabase
+          .from('rooms')
+          .update({
+            game_state: JSON.stringify(roomData)
+          })
+          .eq('code', roomCode)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error transitioning round:', error);
+          return null;
+        }
+
+        return this.mapSupabaseToRoom(data);
+      }
+
+      return room;
+    } catch (error) {
+      console.error('Error checking round transition:', error);
       return null;
     }
   }
@@ -524,7 +610,8 @@ export class SupabaseRoomManager {
         joinedAt: data.joined_at ? new Date(data.joined_at).getTime() : undefined,
         gameState: data.game_state ? roomData.game_state : undefined,
         gameMode: data.game_mode || 'all',
-        hostPlayerId: players[0]?.id
+        hostPlayerId: players[0]?.id,
+        decades: data.decades || []
       };
     }
 
@@ -538,7 +625,8 @@ export class SupabaseRoomManager {
       gameState: roomData.game_state,
       gameMode: data.game_mode || 'all',
       hostPlayerId: roomData.host_player_id,
-      lockedPlayers: roomData.locked_players
+      lockedPlayers: roomData.locked_players,
+      decades: data.decades || []
     };
   }
 

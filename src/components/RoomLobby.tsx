@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Users, CheckCircle, Clock, Play, ArrowLeft, Crown, UserX, Copy } from 'lucide-react';
 import { Room, MAX_PLAYERS } from '../types/game';
-import { GAME_MODES } from '../types/game';
+import { GAME_MODES, DECADES } from '../types/game';
 
 interface RoomLobbyProps {
   room: Room;
@@ -22,6 +22,7 @@ export const RoomLobby: React.FC<RoomLobbyProps> = ({
   onLeaveRoom,
   isLoading = false
 }) => {
+  console.log('Room object in RoomLobby:', room); // DEBUG LOG
   const [copied, setCopied] = useState(false);
   const shareableLink = `${window.location.origin}/room/${room.code}`;
   const isCurrentPlayerReady = room.playersReady[playerId] || false;
@@ -29,6 +30,20 @@ export const RoomLobby: React.FC<RoomLobbyProps> = ({
   const allConnectedReady = connectedPlayers.every(p => room.playersReady[p.id]);
   const isHost = room.hostPlayerId === playerId;
   const selectedGameMode = GAME_MODES.find(mode => mode.value === room.gameMode);
+
+  // Show selected decades in the lobby
+  let decadesArr = room.decades;
+  if (typeof decadesArr === 'string') {
+    try {
+      decadesArr = JSON.parse(decadesArr);
+    } catch {
+      decadesArr = [];
+    }
+  }
+  const selectedDecadesLabel =
+    !decadesArr || decadesArr.length === 0
+      ? 'All Players'
+      : DECADES.filter(d => decadesArr.includes(d.value)).map(d => d.label).join(', ');
 
   React.useEffect(() => {
     if (allConnectedReady && room.status === 'playing' && connectedPlayers.length >= 2) {
@@ -103,21 +118,14 @@ export const RoomLobby: React.FC<RoomLobbyProps> = ({
           </div>
 
           {/* Game Mode Display */}
-          {selectedGameMode && (
-            <div className="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-200">
-              <div className="text-center">
-                <p className="text-sm font-medium text-blue-700 mb-1">Game Mode</p>
-                <div className="text-lg font-bold text-blue-800">
-                  {selectedGameMode.label}
-                </div>
-                {room.gameMode !== 'all' && (
-                  <p className="text-xs text-blue-600 mt-1">
-                    Players from the {room.gameMode}
-                  </p>
-                )}
+          <div className="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-200">
+            <div className="text-center">
+              <p className="text-sm font-medium text-blue-700 mb-1">Game Mode</p>
+              <div className="text-lg font-bold text-blue-800">
+                {selectedDecadesLabel}
               </div>
             </div>
-          )}
+          </div>
 
           {/* Player Count */}
           <div className="bg-gray-50 rounded-xl p-4 mb-6">
@@ -168,7 +176,7 @@ export const RoomLobby: React.FC<RoomLobbyProps> = ({
                     </span>
                   )}
                   {player.id === room.hostPlayerId && (
-                    <Crown className="w-4 h-4 text-yellow-600" title="Host" />
+                    <Crown className="w-4 h-4 text-yellow-600" />
                   )}
                 </div>
                 <div className="flex items-center space-x-2">
@@ -198,32 +206,41 @@ export const RoomLobby: React.FC<RoomLobbyProps> = ({
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center space-x-2">
-                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                    <span>Updating...</span>
+                    <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
+                    <span>Starting Game...</span>
                   </div>
                 ) : (
-                  isCurrentPlayerReady ? 'Cancel Ready' : 'I\'m Ready!'
+                  isCurrentPlayerReady ? 'Not Ready' : 'Ready to Play'
                 )}
               </button>
             )}
 
-            {allConnectedReady && connectedPlayers.length >= 2 && (
-              <div className="text-center">
-                <div className="inline-flex items-center space-x-2 text-green-600 bg-green-50 px-6 py-4 rounded-xl mb-4 border border-green-200">
-                  <Play className="w-5 h-5" />
-                  <span className="font-semibold">Starting game...</span>
-                </div>
-                <p className="text-sm text-gray-600">Get ready for the NBA challenge!</p>
-              </div>
+            {allConnectedReady && connectedPlayers.length >= 2 && isHost && (
+              <button
+                onClick={onStartGame}
+                disabled={isLoading}
+                className={`w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg hover:shadow-xl disabled:shadow-none flex items-center justify-center space-x-2 ${isLoading ? 'opacity-50' : ''}`}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
+                    <span>Starting Game...</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-5 h-5" />
+                    <span>Start Game</span>
+                  </>
+                )}
+              </button>
             )}
 
-            {connectedPlayers.length < 2 && (
-              <div className="text-center">
-                <div className="inline-flex items-center space-x-2 text-orange-600 bg-orange-50 px-6 py-4 rounded-xl mb-4 border border-orange-200">
-                  <Clock className="w-5 h-5" />
-                  <span className="font-semibold">Need at least 2 players to start</span>
+            {allConnectedReady && connectedPlayers.length >= 2 && !isHost && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+                <div className="flex items-center justify-center space-x-2 text-blue-700">
+                  <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  <span className="font-medium">Waiting for host to start the game...</span>
                 </div>
-                <p className="text-sm text-gray-600">Share the room code with friends!</p>
               </div>
             )}
           </div>
@@ -234,7 +251,7 @@ export const RoomLobby: React.FC<RoomLobbyProps> = ({
               <p className="text-sm text-gray-500">
                 {isCurrentPlayerReady 
                   ? `Waiting for ${connectedPlayers.filter(p => !room.playersReady[p.id]).length} more player(s) to get ready`
-                  : 'Click "I\'m Ready!" when you\'re prepared to start'
+                  : 'Click "Ready to Play" when you\'re prepared to start'
                 }
               </p>
             </div>
