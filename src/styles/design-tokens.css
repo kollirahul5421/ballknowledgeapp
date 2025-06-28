@@ -1,0 +1,66 @@
+:root {
+  /* Colors */
+  --color-background: #000000;
+  --color-card-background: #000000;
+  --color-card-border: #3f3f46;
+  --color-primary: #A97DFE;
+  --color-primary-hover: #bfa2f7;
+  --color-text: #ffffff;
+  --color-subtext: #a3a3a3;
+  --color-dot: rgba(255,255,255,0.10);
+
+  /* Background Pattern */
+  --dot-size: 3.5px;
+  --dot-spacing: 32px;
+
+  /* Card */
+  --card-border-radius: 1rem;
+  --card-padding: 1.25rem 1.5rem;
+  --card-shadow: 0 8px 32px 0 rgba(0,0,0,0.25);
+
+  /* Button Primary */
+  --button-primary-background: #A97DFE;
+  --button-primary-color: #fff;
+  --button-primary-hover-background: #bfa2f7;
+  --button-primary-shadow: 0 0 10px 2px rgba(169,125,254,0.4);
+  --button-primary-border-radius: 1rem;
+  --button-primary-font-weight: bold;
+
+  /* Button Outline */
+  --button-outline-background: transparent;
+  --button-outline-color: #A97DFE;
+  --button-outline-border: 2px solid #A97DFE;
+  --button-outline-hover-background: rgba(169,125,254,0.10);
+  --button-outline-shadow: 0 0 8px 1px rgba(169,125,254,0.18);
+  --button-outline-border-radius: 1rem;
+  --button-outline-font-weight: bold;
+
+  /* Typography */
+  --header-font-size: 2.25rem;
+  --header-font-weight: bold;
+  --header-color: #fff;
+  --subheader-font-size: 1rem;
+  --subheader-color: #a3a3a3;
+  --label-font-size: 0.875rem;
+  --label-color: #e5e5e5;
+  --input-font-size: 0.875rem;
+  --input-color: #fff;
+  --input-background: #000;
+  --input-border: 1px solid #52525b;
+
+  /* Icon */
+  --icon-basketball-color: #A97DFE;
+  --icon-basketball-size: 2.5rem;
+
+  /* Status Chips */
+  --chip-success-background: #1a3d2a;
+  --chip-success-color: #4ade80;
+  --chip-warning-background: #3a2412;
+  --chip-warning-color: #fb923c;
+  --chip-neutral-background: #18181b;
+  --chip-neutral-color: #a3a3a3;
+
+  /* Error Chip */
+  --chip-error-background: #2a181a;
+  --chip-error-color: #fb4b6b;
+} 

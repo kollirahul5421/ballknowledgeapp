@@ -70,37 +70,39 @@ export const RoomLobby: React.FC<RoomLobbyProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-dot flex items-center justify-center p-4" style={{ background: 'var(--color-background)' }}>
       <div className="w-full max-w-md">
         {/* Back Button */}
         <button
           onClick={onLeaveRoom}
           disabled={isLoading}
-          className="mb-4 text-blue-200 hover:text-white transition-colors flex items-center space-x-2 disabled:opacity-50"
+          className="mb-4 flex items-center space-x-2 disabled:opacity-50"
+          style={{ color: 'var(--color-primary)' }}
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Leave Room</span>
         </button>
 
         {/* Main Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+        <div className="rounded-2xl shadow-2xl border" style={{ background: 'var(--color-card-background)', borderColor: 'var(--color-card-border)', borderRadius: 'var(--card-border-radius)', boxShadow: 'var(--card-shadow)', padding: '2rem 2.5rem' }}>
           {/* Header */}
           <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-              <Users className="w-8 h-8 text-blue-600" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ background: 'var(--color-primary)', color: 'var(--color-text)' }}>
+              <Users className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-1">Game Lobby</h2>
-            <p className="text-gray-600">Room Code: <span className="font-mono font-bold">{room.code}</span></p>
+            <h2 className="mb-1" style={{ fontSize: 'var(--header-font-size)', fontWeight: 'var(--header-font-weight)', color: 'var(--header-color)' }}>Game Lobby</h2>
+            <p style={{ color: 'var(--subheader-color)' }}>Room Code: <span className="font-mono font-bold" style={{ color: 'var(--color-primary)' }}>{room.code}</span></p>
           </div>
 
           {/* Share Link UI */}
-          <div className="bg-gray-50 rounded-xl p-6 mb-6">
+          <div className="rounded-xl mb-6" style={{ background: 'var(--color-background)', padding: '1.5rem' }}>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-700 mb-2">Share Room Link</p>
-              <div className="text-xs font-mono text-blue-600 break-all mb-4">{shareableLink}</div>
+              <p className="mb-2 font-medium" style={{ fontSize: 'var(--label-font-size)', color: 'var(--label-color)' }}>Share Room Link</p>
+              <div className="text-xs font-mono mb-4" style={{ color: 'var(--color-primary)', wordBreak: 'break-all' }}>{shareableLink}</div>
               <button
                 onClick={copyToClipboard}
-                className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="inline-flex items-center space-x-2 rounded-lg transition-colors"
+                style={{ background: 'var(--button-primary-background)', color: 'var(--button-primary-color)', fontWeight: 'var(--button-primary-font-weight)', boxShadow: 'var(--button-primary-shadow)', borderRadius: '0.75rem', fontSize: '0.95rem', padding: '0.5rem 1.25rem' }}
               >
                 {copied ? (
                   <>
@@ -118,24 +120,24 @@ export const RoomLobby: React.FC<RoomLobbyProps> = ({
           </div>
 
           {/* Game Mode Display */}
-          <div className="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-200">
+          <div className="rounded-xl mb-6 border" style={{ background: 'var(--color-background)', borderColor: 'var(--color-primary)', padding: '1rem' }}>
             <div className="text-center">
-              <p className="text-sm font-medium text-blue-700 mb-1">Game Mode</p>
-              <div className="text-lg font-bold text-blue-800">
+              <p className="mb-1 font-medium" style={{ fontSize: 'var(--label-font-size)', color: 'var(--color-primary)' }}>Game Mode</p>
+              <div className="text-lg font-bold" style={{ color: 'var(--color-primary)' }}>
                 {selectedDecadesLabel}
               </div>
             </div>
           </div>
 
           {/* Player Count */}
-          <div className="bg-gray-50 rounded-xl p-4 mb-6">
+          <div className="rounded-xl mb-6" style={{ background: 'var(--color-background)', padding: '1rem' }}>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-700 mb-1">Players</p>
-              <div className="text-2xl font-bold text-gray-900">
+              <p className="mb-1 font-medium" style={{ fontSize: 'var(--label-font-size)', color: 'var(--label-color)' }}>Players</p>
+              <div className="text-2xl font-bold" style={{ color: 'var(--header-color)' }}>
                 {connectedPlayers.length}/{MAX_PLAYERS}
               </div>
               {room.players.length >= MAX_PLAYERS && (
-                <p className="text-xs text-orange-600 mt-1">Room is full!</p>
+                <p className="text-xs mt-1" style={{ color: '#F7931E' }}>Room is full!</p>
               )}
             </div>
           </div>
@@ -145,47 +147,30 @@ export const RoomLobby: React.FC<RoomLobbyProps> = ({
             {room.players.map((player) => (
               <div
                 key={player.id}
-                className={`flex items-center justify-between p-4 rounded-lg border-2 transition-colors ${
-                  !player.isConnected
-                    ? 'bg-red-50 border-red-200'
-                    : room.playersReady[player.id]
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-gray-50 border-gray-200'
-                }`}
+                className="flex items-center justify-between p-4 rounded-lg border-2 transition-colors"
+                style={{ background: 'var(--color-card-background)', borderColor: !player.isConnected ? '#FECACA' : room.playersReady[player.id] ? '#22C55E' : 'var(--color-card-border)' }}
               >
                 <div className="flex items-center space-x-3">
-                  <div className={`w-3 h-3 rounded-full ${
-                    !player.isConnected
-                      ? 'bg-red-500'
-                      : room.playersReady[player.id]
-                      ? 'bg-green-500'
-                      : 'bg-gray-400'
-                  }`}></div>
-                  <span className={`font-medium ${
-                    !player.isConnected
-                      ? 'text-red-800'
-                      : room.playersReady[player.id]
-                      ? 'text-green-800'
-                      : 'text-gray-600'
-                  }`}>
+                  <div className="w-3 h-3 rounded-full" style={{ background: !player.isConnected ? '#EF4444' : room.playersReady[player.id] ? '#22C55E' : '#A3A3A3' }}></div>
+                  <span className="font-medium" style={{ color: !player.isConnected ? '#B91C1C' : room.playersReady[player.id] ? '#22C55E' : 'var(--subheader-color)' }}>
                     {player.name}
                   </span>
                   {player.id === playerId && (
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'var(--color-primary)', color: 'var(--color-text)' }}>
                       You
                     </span>
                   )}
                   {player.id === room.hostPlayerId && (
-                    <Crown className="w-4 h-4 text-yellow-600" />
+                    <Crown className="w-4 h-4" style={{ color: '#FFD600' }} />
                   )}
                 </div>
                 <div className="flex items-center space-x-2">
                   {!player.isConnected ? (
-                    <UserX className="w-5 h-5 text-red-500" />
+                    <UserX className="w-5 h-5" style={{ color: '#EF4444' }} />
                   ) : room.playersReady[player.id] ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <CheckCircle className="w-5 h-5" style={{ color: '#22C55E' }} />
                   ) : (
-                    <Clock className="w-5 h-5 text-gray-400" />
+                    <Clock className="w-5 h-5" style={{ color: '#A3A3A3' }} />
                   )}
                 </div>
               </div>
@@ -198,11 +183,8 @@ export const RoomLobby: React.FC<RoomLobbyProps> = ({
               <button
                 onClick={onToggleReady}
                 disabled={isLoading}
-                className={`w-full font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg hover:shadow-xl disabled:shadow-none ${
-                  isCurrentPlayerReady
-                    ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white'
-                    : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white'
-                } ${isLoading ? 'opacity-50' : ''}`}
+                className="w-full flex items-center justify-center space-x-2 rounded-2xl transition-all duration-200"
+                style={{ background: isCurrentPlayerReady ? 'var(--button-outline-background)' : 'var(--button-primary-background)', color: isCurrentPlayerReady ? 'var(--button-outline-color)' : 'var(--button-primary-color)', fontWeight: 'var(--button-primary-font-weight)', boxShadow: isCurrentPlayerReady ? 'var(--button-outline-shadow)' : 'var(--button-primary-shadow)', border: isCurrentPlayerReady ? 'var(--button-outline-border)' : 'none', borderRadius: 'var(--button-primary-border-radius)', fontSize: '1rem', padding: '0.75rem 1.5rem', opacity: isLoading ? 0.5 : 1 }}
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center space-x-2">
@@ -219,7 +201,8 @@ export const RoomLobby: React.FC<RoomLobbyProps> = ({
               <button
                 onClick={onStartGame}
                 disabled={isLoading}
-                className={`w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg hover:shadow-xl disabled:shadow-none flex items-center justify-center space-x-2 ${isLoading ? 'opacity-50' : ''}`}
+                className="w-full flex items-center justify-center space-x-2 rounded-2xl transition-all duration-200"
+                style={{ background: 'var(--button-primary-background)', color: 'var(--button-primary-color)', fontWeight: 'var(--button-primary-font-weight)', boxShadow: 'var(--button-primary-shadow)', borderRadius: 'var(--button-primary-border-radius)', fontSize: '1rem', padding: '0.75rem 1.5rem', opacity: isLoading ? 0.5 : 1 }}
               >
                 {isLoading ? (
                   <>
@@ -236,8 +219,8 @@ export const RoomLobby: React.FC<RoomLobbyProps> = ({
             )}
 
             {allConnectedReady && connectedPlayers.length >= 2 && !isHost && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
-                <div className="flex items-center justify-center space-x-2 text-blue-700">
+              <div className="rounded-xl p-4 text-center" style={{ background: 'var(--color-background)', border: '1px solid var(--color-primary)' }}>
+                <div className="flex items-center justify-center space-x-2" style={{ color: 'var(--color-primary)' }}>
                   <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
                   <span className="font-medium">Waiting for host to start the game...</span>
                 </div>

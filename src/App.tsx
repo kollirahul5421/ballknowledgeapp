@@ -274,9 +274,12 @@ function App() {
   // Show loading state for async operations
   if (isLoading && gameState.currentView === 'home') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
-        <div className="text-center text-white">
-          <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
+      <div className="min-h-screen bg-dot flex items-center justify-center p-4" style={{ background: 'var(--color-background)' }}>
+        <div className="text-center" style={{ color: 'var(--color-text)' }}>
+          <div
+            className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"
+            style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}
+          ></div>
           <p>Setting up your game...</p>
         </div>
       </div>

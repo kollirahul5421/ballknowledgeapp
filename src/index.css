@@ -1,3 +1,27 @@
+@import './styles/design-tokens.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  background: #0A0A0A;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+}
+
+input::placeholder {
+  color: #888888;
+  opacity: 1;
+}
+
+:focus {
+  outline: 2px solid #A97DFE;
+  outline-offset: 2px;
+}
+
+/* Dotted dark background for HomePage */
+.bg-dot {
+  background-color: var(--color-background, #000) !important;
+  background-image: radial-gradient(var(--color-dot, rgba(255,255,255,0.28)) var(--dot-size, 5px), transparent var(--dot-size, 5px)) !important;
+  background-size: var(--dot-spacing, 32px) var(--dot-spacing, 32px) !important;
+}

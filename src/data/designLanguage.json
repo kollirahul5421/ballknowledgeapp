@@ -1,0 +1,67 @@
+{
+  "colors": {
+    "background": "#000000",
+    "cardBackground": "#000000",
+    "cardBorder": "#3f3f46", // Tailwind's gray-700
+    "primary": "#A97DFE",
+    "primaryHover": "#bfa2f7",
+    "text": "#ffffff",
+    "subtext": "#a3a3a3",
+    "dot": "rgba(255,255,255,0.10)"
+  },
+  "backgroundPattern": {
+    "dotSize": "3.5px",
+    "dotSpacing": "32px"
+  },
+  "card": {
+    "borderRadius": "1rem",
+    "padding": "1.25rem 1.5rem",
+    "shadow": "0 8px 32px 0 rgba(0,0,0,0.25)"
+  },
+  "button": {
+    "primary": {
+      "background": "#A97DFE",
+      "color": "#fff",
+      "hoverBackground": "#bfa2f7",
+      "shadow": "0 0 10px 2px rgba(169,125,254,0.4)",
+      "borderRadius": "1rem",
+      "fontWeight": "bold"
+    },
+    "outline": {
+      "background": "transparent",
+      "color": "#A97DFE",
+      "border": "2px solid #A97DFE",
+      "hoverBackground": "rgba(169,125,254,0.10)",
+      "shadow": "0 0 8px 1px rgba(169,125,254,0.18)",
+      "borderRadius": "1rem",
+      "fontWeight": "bold"
+    }
+  },
+  "typography": {
+    "header": {
+      "fontSize": "2.25rem", // 4xl
+      "fontWeight": "bold",
+      "color": "#fff"
+    },
+    "subheader": {
+      "fontSize": "1rem", // sm
+      "color": "#a3a3a3"
+    },
+    "label": {
+      "fontSize": "0.875rem", // xs/sm
+      "color": "#e5e5e5"
+    },
+    "input": {
+      "fontSize": "0.875rem",
+      "color": "#fff",
+      "background": "#000",
+      "border": "1px solid #52525b"
+    }
+  },
+  "icon": {
+    "basketball": {
+      "color": "#A97DFE",
+      "size": "2.5rem"
+    }
+  }
+} 

@@ -46,26 +46,27 @@ export const JoinGame: React.FC<JoinGameProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-dot flex items-center justify-center p-4" style={{ background: 'var(--color-background)' }}>
       <div className="w-full max-w-md">
         {/* Back Button */}
         <button
           onClick={onBack}
           disabled={isLoading}
-          className="mb-4 text-blue-200 hover:text-white transition-colors flex items-center space-x-2 disabled:opacity-50"
+          className="mb-4 flex items-center space-x-2 disabled:opacity-50"
+          style={{ color: 'var(--color-primary)' }}
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Home</span>
         </button>
 
         {/* Main Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+        <div className="rounded-2xl shadow-2xl border" style={{ background: 'var(--color-card-background)', borderColor: 'var(--color-card-border)', borderRadius: 'var(--card-border-radius)', boxShadow: 'var(--card-shadow)', padding: '2rem 2.5rem' }}>
           <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mb-4">
-              <Users className="w-8 h-8 text-orange-600" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ background: 'var(--color-primary)', color: 'var(--color-text)' }}>
+              <Users className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Join Game</h2>
-            <p className="text-gray-600">
+            <h2 className="mb-2" style={{ fontSize: 'var(--header-font-size)', fontWeight: 'var(--header-font-weight)', color: 'var(--header-color)' }}>Join Game</h2>
+            <p style={{ color: 'var(--subheader-color)' }}>
               {prefilledRoomCode 
                 ? 'Enter your display name to join this game'
                 : 'Enter the room code and your name to join'
@@ -76,7 +77,7 @@ export const JoinGame: React.FC<JoinGameProps> = ({
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Display Name Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block font-medium mb-2" style={{ fontSize: 'var(--label-font-size)', color: 'var(--label-color)' }}>
                 Your Display Name (Optional)
               </label>
               <input
@@ -84,18 +85,19 @@ export const JoinGame: React.FC<JoinGameProps> = ({
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Enter your name..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-gray-900 placeholder-gray-500"
+                className="w-full rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder-gray-500 text-sm"
+                style={{ padding: '0.75rem 1rem', border: 'var(--input-border)', color: 'var(--input-color)', background: 'var(--input-background)', fontSize: 'var(--input-font-size)' }}
                 maxLength={20}
                 disabled={isLoading}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="mt-1" style={{ fontSize: 'var(--label-font-size)', color: 'var(--subheader-color)' }}>
                 Leave blank for default name
               </p>
             </div>
 
             {/* Room Code Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block font-medium mb-2" style={{ fontSize: 'var(--label-font-size)', color: 'var(--label-color)' }}>
                 Room Code
               </label>
               <input
@@ -103,21 +105,26 @@ export const JoinGame: React.FC<JoinGameProps> = ({
                 value={roomCode}
                 onChange={handleInputChange}
                 placeholder="Enter 5-character code"
-                className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-center text-2xl font-bold tracking-wider text-gray-900 placeholder-gray-400 ${
-                  prefilledRoomCode ? 'bg-gray-50' : ''
-                }`}
+                className={`w-full rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-center font-bold tracking-wider text-sm ${prefilledRoomCode ? '' : ''}`}
+                style={{
+                  padding: '0.75rem 1rem',
+                  border: 'var(--input-border)',
+                  color: 'var(--input-color)',
+                  background: 'var(--input-background)',
+                  fontSize: '1.5rem'
+                }}
                 maxLength={5}
                 required
                 disabled={isLoading}
                 readOnly={!!prefilledRoomCode}
               />
               {!prefilledRoomCode && (
-                <p className="text-xs text-gray-500 mt-1 text-center">
+                <p className="mt-1 text-center" style={{ fontSize: 'var(--label-font-size)', color: 'var(--subheader-color)' }}>
                   Example: A3B9K
                 </p>
               )}
               {prefilledRoomCode && (
-                <p className="text-xs text-green-600 mt-1 text-center">
+                <p className="mt-1 text-center" style={{ fontSize: 'var(--label-font-size)', color: '#22C55E' }}>
                   Room code loaded from link
                 </p>
               )}
@@ -125,7 +132,7 @@ export const JoinGame: React.FC<JoinGameProps> = ({
 
             {/* Error Message */}
             {error && (
-              <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+              <div className="flex items-center space-x-2 p-3 rounded-lg border" style={{ color: '#EF4444', background: '#FEF2F2', borderColor: '#FECACA' }}>
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span className="text-sm">{error}</span>
               </div>
@@ -135,7 +142,8 @@ export const JoinGame: React.FC<JoinGameProps> = ({
             <button
               type="submit"
               disabled={roomCode.length !== 5 || isLoading}
-              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg hover:shadow-xl disabled:shadow-none"
+              className="w-full flex items-center justify-center space-x-2 rounded-2xl transition-all duration-200"
+              style={{ background: 'var(--button-primary-background)', color: 'var(--button-primary-color)', fontWeight: 'var(--button-primary-font-weight)', boxShadow: 'var(--button-primary-shadow)', borderRadius: 'var(--button-primary-border-radius)', fontSize: '1rem', padding: '0.75rem 1.5rem', opacity: isLoading ? 0.5 : 1 }}
             >
               {isLoading ? (
                 <div className="flex items-center justify-center space-x-2">
@@ -150,7 +158,7 @@ export const JoinGame: React.FC<JoinGameProps> = ({
 
           {/* Help Text */}
           <div className="text-center mt-6">
-            <p className="text-xs text-gray-500">
+            <p style={{ fontSize: 'var(--label-font-size)', color: 'var(--subheader-color)' }}>
               {prefilledRoomCode 
                 ? 'You were invited to join this game room'
                 : 'Ask your friend for their room code to join their game'
