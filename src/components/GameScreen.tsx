@@ -374,8 +374,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               {gameState.roundState === 'revealed' && (
                 <div className="absolute inset-0 bg-black bg-opacity-50 rounded-2xl flex items-center justify-center">
                   <div className="text-center p-4" style={{ color: 'var(--color-text)' }}>
-                    <h3 className="text-2xl font-bold mb-2">{gameState.currentPlayer.name}</h3>
-                    <p className="text-lg">{gameState.currentPlayer.team}</p>
+                    <h3 className="text-2xl font-bold">{gameState.currentPlayer.name}</h3>
                   </div>
                 </div>
               )}
@@ -540,14 +539,14 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                       {gameState.correctGuesser === playerId ? 'Correct!' : `${getPlayerName(gameState.correctGuesser)} got it!`}
                     </h3>
                     <p style={{ color: 'var(--chip-success-color)' }}>
-                      That was <span className="font-bold">{gameState.currentPlayer.name}</span> from the {gameState.currentPlayer.team}
+                      That was <span className="font-bold">{gameState.currentPlayer.name}</span>
                     </p>
                   </div>
                 ) : (
                   <div className="rounded-xl p-6" style={{ background: 'var(--chip-error-background)' }}>
                     <h3 className="text-2xl font-bold mb-2" style={{ color: 'var(--chip-error-color)' }}>No one got it!</h3>
                     <p style={{ color: 'var(--chip-error-color)' }}>
-                      That was <span className="font-bold">{gameState.currentPlayer.name}</span> from the {gameState.currentPlayer.team}
+                      That was <span className="font-bold">{gameState.currentPlayer.name}</span>
                     </p>
                   </div>
                 )}
