@@ -5,6 +5,7 @@ import { JoinGame } from './components/JoinGame';
 import { RoomLobby } from './components/RoomLobby';
 import { GameScreen } from './components/GameScreen';
 import { AdminPage } from './components/AdminPage';
+import { SinglePlayerGame } from './components/SinglePlayerGame';
 import { SupabaseRoomManager } from './utils/supabaseRoomManager';
 import { useSupabaseRoomPolling } from './hooks/useSupabaseRoomPolling';
 import { GameState, Room, GameMode, MAX_PLAYERS, Decade } from './types/game';
@@ -139,6 +140,15 @@ function App() {
       playerName: playerName || prev.playerName,
       currentView: 'join'
     }));
+  };
+
+  const handleSinglePlayer = (decades: Decade[] | 'all', playerName?: string) => {
+    const nameToUse = playerName || gameState.playerName;
+    setGameState({
+      currentView: 'single-player',
+      playerName: nameToUse,
+      singlePlayerDecades: decades
+    });
   };
 
   const handleJoinRoom = async (roomCode: string, playerName?: string) => {
@@ -291,6 +301,14 @@ function App() {
     case 'admin':
       return <AdminPage onBackToHome={handleBackFromAdmin} />;
 
+    case 'single-player':
+      return (
+        <SinglePlayerGame
+          onBackToHome={handleBackToHome}
+          decades={gameState.singlePlayerDecades || 'all'}
+        />
+      );
+
     case 'create':
       return gameState.room ? (
         <CreateGame
@@ -344,6 +362,7 @@ function App() {
           setPlayerName={(name) => setGameState(prev => ({ ...prev, playerName: name }))}
           onCreateGame={handleCreateGame}
           onJoinGame={handleJoinGame}
+          onSinglePlayer={handleSinglePlayer}
           onShowAdmin={handleShowAdmin}
           isLoading={isLoading}
         />

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Users, Plus, LogIn, Trophy, Settings, ChevronDown } from 'lucide-react';
+import { Users, Plus, LogIn, Trophy, Settings, ChevronDown, User } from 'lucide-react';
 import { Decade, DECADES } from '../types/game';
 
 interface HomePageProps {
@@ -7,6 +7,7 @@ interface HomePageProps {
   setPlayerName: (name: string) => void;
   onCreateGame: (decades: Decade[] | 'all', playerName: string) => void;
   onJoinGame: (playerName: string) => void;
+  onSinglePlayer: (decades: Decade[] | 'all', playerName: string) => void;
   onShowAdmin: () => void;
   isLoading?: boolean;
 }
@@ -16,6 +17,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   setPlayerName,
   onCreateGame,
   onJoinGame,
+  onSinglePlayer,
   onShowAdmin,
   isLoading = false
 }) => {
@@ -49,6 +51,12 @@ export const HomePage: React.FC<HomePageProps> = ({
     const name = inputValue.trim() || 'Player 2';
     setPlayerName(name);
     onJoinGame(name);
+  };
+
+  const handleSinglePlayer = () => {
+    const name = inputValue.trim() || 'Player';
+    setPlayerName(name);
+    onSinglePlayer(selectedDecades.length === 0 ? 'all' : selectedDecades, name);
   };
 
   const handleDecadeChange = (decade: Decade) => {
@@ -175,7 +183,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             {/* Action Buttons */}
             <div className="space-y-3">
               <button
-                onClick={handleCreateGame}
+                onClick={handleSinglePlayer}
                 disabled={isLoading}
                 className="w-full flex items-center justify-center space-x-2 rounded-2xl transition-all duration-200"
                 style={{ background: 'var(--button-primary-background)', color: 'var(--button-primary-color)', fontWeight: 'var(--button-primary-font-weight)', boxShadow: 'var(--button-primary-shadow)', borderRadius: 'var(--button-primary-border-radius)', fontSize: '1rem', padding: '0.75rem 1.5rem' }}
@@ -184,10 +192,19 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
                 ) : (
                   <>
-                    <Plus className="w-5 h-5" />
-                    <span>Create Game</span>
+                    <User className="w-5 h-5" />
+                    <span>Single Player</span>
                   </>
                 )}
+              </button>
+              <button
+                onClick={handleCreateGame}
+                disabled={isLoading}
+                className="w-full flex items-center justify-center space-x-2 rounded-2xl transition-all duration-200"
+                style={{ background: 'var(--button-outline-background)', color: 'var(--button-outline-color)', fontWeight: 'var(--button-outline-font-weight)', boxShadow: 'var(--button-outline-shadow)', border: 'var(--button-outline-border)', borderRadius: 'var(--button-outline-border-radius)', fontSize: '1rem', padding: '0.75rem 1.5rem' }}
+              >
+                <Plus className="w-5 h-5" />
+                <span>Create Game</span>
               </button>
               <button
                 onClick={handleJoinGame}

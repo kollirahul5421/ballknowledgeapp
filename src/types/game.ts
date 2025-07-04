@@ -20,11 +20,12 @@ export interface Player {
 }
 
 export interface GameState {
-  currentView: 'home' | 'create' | 'join' | 'lobby' | 'game' | 'admin';
+  currentView: 'home' | 'create' | 'join' | 'lobby' | 'game' | 'admin' | 'single-player';
   playerName: string;
   playerId?: string;
   roomCode?: string;
   room?: Room;
+  singlePlayerDecades?: Decade[] | 'all';
 }
 
 export interface GameRound {
