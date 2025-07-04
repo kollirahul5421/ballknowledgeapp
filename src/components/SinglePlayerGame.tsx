@@ -25,6 +25,7 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
   const [isRevealed, setIsRevealed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const playerManager = PlayerManager.getInstance();
 
@@ -35,13 +36,14 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
 
   // Focus input when round starts
   useEffect(() => {
-    if (!isRevealed && inputRef.current) {
+    if (!isRevealed && !isTransitioning && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [isRevealed, roundNumber]);
+  }, [isRevealed, roundNumber, isTransitioning]);
 
   const loadNextPlayer = async () => {
     setIsLoading(true);
+    setIsTransitioning(false);
     try {
       const decadeSelection = decades === 'all' ? { all: true, decades: [] } : { all: false, decades };
       const nextPlayer = await playerManager.getRandomPlayer(usedPlayerIds, decadeSelection);
@@ -142,12 +144,6 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
       setIsRevealed(true);
       setShowAnswer(true);
       setGuess('');
-      
-      // Auto-advance to next round after 2 seconds
-      setTimeout(() => {
-        setRoundNumber(prev => prev + 1);
-        loadNextPlayer();
-      }, 2000);
     } else {
       // Incorrect guess - show feedback and allow retry
       setShowIncorrectFeedback(true);
@@ -165,24 +161,28 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
   const handleGiveUp = () => {
     setIsRevealed(true);
     setShowAnswer(true);
-    
-    // Auto-advance to next round after 2 seconds
-    setTimeout(() => {
-      setRoundNumber(prev => prev + 1);
-      loadNextPlayer();
-    }, 2000);
   };
 
   const handleNextRound = () => {
+    setIsTransitioning(true);
     setRoundNumber(prev => prev + 1);
-    loadNextPlayer();
+    
+    // Small delay to show transition state
+    setTimeout(() => {
+      loadNextPlayer();
+    }, 500);
   };
 
   const handleRestart = () => {
     setScore(0);
     setRoundNumber(1);
     setUsedPlayerIds([]);
-    loadNextPlayer();
+    setIsTransitioning(true);
+    
+    // Small delay to show transition state
+    setTimeout(() => {
+      loadNextPlayer();
+    }, 500);
   };
 
   if (isLoading || !currentPlayer) {
@@ -193,7 +193,7 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
             className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"
             style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}
           ></div>
-          <p>Loading player...</p>
+          <p>{isTransitioning ? 'Loading next player...' : 'Loading player...'}</p>
         </div>
       </div>
     );
@@ -361,45 +361,41 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
                     <p style={{ color: 'var(--chip-success-color)' }}>
                       That was <span className="font-bold">{currentPlayer.name}</span>
                     </p>
-                    <p className="text-sm mt-2" style={{ color: 'var(--chip-success-color)' }}>
-                      Loading next player...
-                    </p>
                   </div>
                 ) : (
                   <div className="rounded-xl p-6" style={{ background: 'var(--chip-error-background)' }}>
                     <h3 className="text-2xl font-bold mb-2" style={{ color: 'var(--chip-error-color)' }}>
                       That was {currentPlayer.name}
                     </h3>
-                    <p className="text-sm mt-2" style={{ color: 'var(--chip-error-color)' }}>
-                      Loading next player...
-                    </p>
                   </div>
                 )}
               </div>
 
-              {/* Manual Next Button (in case auto-advance fails) */}
-              <button
-                onClick={handleNextRound}
-                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl mr-4"
-              >
-                Next Player
-              </button>
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={handleNextRound}
+                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                >
+                  Next Player
+                </button>
 
-              <button
-                onClick={handleRestart}
-                className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl mr-4"
-              >
-                <RotateCcw className="w-5 h-5 inline mr-2" />
-                Restart
-              </button>
+                <button
+                  onClick={handleRestart}
+                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                >
+                  <RotateCcw className="w-5 h-5 inline mr-2" />
+                  Restart
+                </button>
 
-              <button
-                onClick={onBackToHome}
-                className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-              >
-                <Home className="w-5 h-5 inline mr-2" />
-                Home
-              </button>
+                <button
+                  onClick={onBackToHome}
+                  className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                >
+                  <Home className="w-5 h-5 inline mr-2" />
+                  Home
+                </button>
+              </div>
             </div>
           )}
         </div>
