@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Trophy, ArrowLeft, Users, Clock, CheckCircle, Crown, RotateCcw, Home, UserX } from 'lucide-react';
+import { Trophy, ArrowLeft, Users, Clock, CheckCircle, Crown, RotateCcw, Home, UserX, X, AlertCircle } from 'lucide-react';
 import { Room, WINNING_SCORE } from '../types/game';
 import { SupabaseRoomManager } from '../utils/supabaseRoomManager';
 
@@ -19,6 +19,8 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const [guess, setGuess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  const [guessAttempts, setGuessAttempts] = useState<Array<{ guess: string; isCorrect: boolean; timestamp: number }>>([]);
+  const [showIncorrectFeedback, setShowIncorrectFeedback] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const roomManager = SupabaseRoomManager.getInstance();
 
@@ -34,9 +36,11 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     }
   }, [gameState?.roundState, gameState?.roundNumber]);
 
-  // Clear guess when new round starts
+  // Clear guess and attempts when new round starts
   useEffect(() => {
     setGuess('');
+    setGuessAttempts([]);
+    setShowIncorrectFeedback(false);
   }, [gameState?.roundNumber]);
 
   // Set image loading when entering guessing state
@@ -82,11 +86,42 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     }
 
     setIsSubmitting(true);
+    setShowIncorrectFeedback(false);
+
     try {
       const updatedRoom = await roomManager.submitGuess(room.code, playerId, guess.trim());
       
       if (updatedRoom) {
-        onRoomUpdate(updatedRoom);
+        // Check if the guess was correct by looking at the game state
+        const wasCorrect = updatedRoom.gameState?.correctGuesser === playerId;
+        
+        // Add to attempts history
+        const newAttempt = {
+          guess: guess.trim(),
+          isCorrect: wasCorrect,
+          timestamp: Date.now()
+        };
+        setGuessAttempts(prev => [...prev, newAttempt]);
+
+        if (wasCorrect) {
+          // Correct guess - clear input and update room
+          setGuess('');
+          onRoomUpdate(updatedRoom);
+        } else {
+          // Incorrect guess - show feedback and allow retry
+          setShowIncorrectFeedback(true);
+          setGuess('');
+          
+          // Hide feedback after 3 seconds
+          setTimeout(() => {
+            setShowIncorrectFeedback(false);
+          }, 3000);
+
+          // Only update room if round state changed (all players guessed/skipped)
+          if (updatedRoom.gameState?.roundState !== gameState.roundState) {
+            onRoomUpdate(updatedRoom);
+          }
+        }
       }
     } catch (error) {
       console.error('Error submitting guess:', error);
@@ -372,8 +407,16 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                       value={guess}
                       onChange={(e) => setGuess(e.target.value)}
                       placeholder="Enter player name..."
-                      className="flex-1 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder-gray-500 text-sm"
-                      style={{ padding: '0.75rem 1rem', border: 'var(--input-border)', color: 'var(--input-color)', background: 'var(--input-background)', fontSize: 'var(--input-font-size)' }}
+                      className={`flex-1 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder-gray-500 text-sm ${
+                        showIncorrectFeedback ? 'border-red-500 bg-red-50' : ''
+                      }`}
+                      style={{ 
+                        padding: '0.75rem 1rem', 
+                        border: showIncorrectFeedback ? '2px solid #EF4444' : 'var(--input-border)', 
+                        color: 'var(--input-color)', 
+                        background: showIncorrectFeedback ? '#FEF2F2' : 'var(--input-background)', 
+                        fontSize: 'var(--input-font-size)' 
+                      }}
                       disabled={isSubmitting}
                       maxLength={50}
                     />
@@ -389,8 +432,46 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                       )}
                     </button>
                   </div>
+                  
+                  {/* Incorrect Feedback */}
+                  {showIncorrectFeedback && (
+                    <div className="mt-3 flex items-center space-x-2 text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                      <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                      <span className="text-sm font-medium">Incorrect guess! Try again.</span>
+                    </div>
+                  )}
                 </div>
               </form>
+
+              {/* Previous Attempts */}
+              {guessAttempts.length > 0 && (
+                <div className="mb-6 max-w-md mx-auto">
+                  <h4 className="text-sm font-medium mb-2 text-center" style={{ color: 'var(--subheader-color)' }}>
+                    Your attempts:
+                  </h4>
+                  <div className="space-y-2">
+                    {guessAttempts.slice(-3).map((attempt, index) => (
+                      <div
+                        key={index}
+                        className={`flex items-center justify-between p-2 rounded-lg text-sm ${
+                          attempt.isCorrect 
+                            ? 'bg-green-50 border border-green-200' 
+                            : 'bg-red-50 border border-red-200'
+                        }`}
+                      >
+                        <span className={attempt.isCorrect ? 'text-green-700' : 'text-red-700'}>
+                          {attempt.guess}
+                        </span>
+                        {attempt.isCorrect ? (
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <X className="w-4 h-4 text-red-600" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Skip Button */}
               <div className="text-center mb-4">

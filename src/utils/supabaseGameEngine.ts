@@ -89,22 +89,21 @@ export class SupabaseGameEngine {
     const timestamp = Date.now();
     const updatedGameState = { ...gameState };
     
-    // Record the guess and timestamp
-    updatedGameState.guesses = {
-      ...updatedGameState.guesses,
-      [playerId]: guess
-    };
-    
-    updatedGameState.guessTimestamps = {
-      ...updatedGameState.guessTimestamps,
-      [playerId]: timestamp
-    };
-
     // Check if guess is correct
     const isCorrect = this.isCorrectGuess(guess, gameState.currentPlayer.name);
 
     if (isCorrect) {
-      // Player guessed correctly
+      // Player guessed correctly - record the guess and end the round
+      updatedGameState.guesses = {
+        ...updatedGameState.guesses,
+        [playerId]: guess
+      };
+      
+      updatedGameState.guessTimestamps = {
+        ...updatedGameState.guessTimestamps,
+        [playerId]: timestamp
+      };
+
       updatedGameState.correctGuesser = playerId;
       updatedGameState.roundState = 'revealed';
       
@@ -119,16 +118,9 @@ export class SupabaseGameEngine {
         updatedGameState.gameWinner = playerId;
       }
     } else {
-      // Check if all active players have either guessed or voted to skip
-      const allPlayersHaveActed = gameState.activePlayers.every(pid => 
-        updatedGameState.guesses[pid] !== undefined || updatedGameState.skipVotes[pid]
-      );
-      
-      if (allPlayersHaveActed) {
-        // All active players have acted, reveal answer
-        updatedGameState.roundState = 'revealed';
-        updatedGameState.correctGuesser = null;
-      }
+      // Incorrect guess - don't record it, just return the same state
+      // This allows the player to try again without advancing the round
+      return gameState;
     }
 
     return updatedGameState;
@@ -254,35 +246,15 @@ export class SupabaseGameEngine {
       [playerId]: true
     };
 
-    // Check if all active players have either guessed or voted to skip
-    const allPlayersHaveActed = gameState.activePlayers.every(pid => 
-      updatedGameState.guesses[pid] !== undefined || updatedGameState.skipVotes[pid]
+    // Check if all active players have voted to skip
+    const allPlayersVotedToSkip = gameState.activePlayers.every(pid => 
+      updatedGameState.skipVotes[pid]
     );
 
-    if (allPlayersHaveActed) {
-      // All players have either guessed or voted to skip, reveal the answer
+    if (allPlayersVotedToSkip) {
+      // All players voted to skip, reveal the answer
       updatedGameState.roundState = 'revealed';
-      
-      // Check if anyone guessed correctly
-      const correctGuesser = gameState.activePlayers.find(pid => 
-        updatedGameState.guesses[pid] && this.isCorrectGuess(updatedGameState.guesses[pid], gameState.currentPlayer.name)
-      );
-      
-      if (correctGuesser) {
-        updatedGameState.correctGuesser = correctGuesser;
-        // Update score for correct guesser
-        updatedGameState.scores = {
-          ...updatedGameState.scores,
-          [correctGuesser]: (updatedGameState.scores[correctGuesser] || 0) + 1
-        };
-        
-        // Check for game winner
-        if (updatedGameState.scores[correctGuesser] >= WINNING_SCORE) {
-          updatedGameState.gameWinner = correctGuesser;
-        }
-      } else {
-        updatedGameState.correctGuesser = null;
-      }
+      updatedGameState.correctGuesser = null;
     }
 
     return updatedGameState;
@@ -328,8 +300,8 @@ export class SupabaseGameEngine {
       return true;
     }
     
-    // Simple Levenshtein distance check for typos
-    return this.calculateLevenshteinDistance(normalizedGuess, normalizedCorrect) <= 1;
+    // Simple Levenshtein distance check for typos (allow 1-2 character differences)
+    return this.calculateLevenshteinDistance(normalizedGuess, normalizedCorrect) <= 2;
   }
 
   private calculateLevenshteinDistance(str1: string, str2: string): number {
