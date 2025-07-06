@@ -30,6 +30,8 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
   const [lastGuessResult, setLastGuessResult] = useState<'correct' | 'incorrect' | 'giveup' | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const playerManager = PlayerManager.getInstance();
+  // Guard to prevent double load in Strict Mode
+  const hasLoadedInitialPlayer = useRef(false);
 
   // Load high score from localStorage on mount
   useEffect(() => {
@@ -39,9 +41,12 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
     }
   }, []);
 
-  // Load first player on mount
+  // Load first player on mount (guarded)
   useEffect(() => {
-    loadNextPlayer();
+    if (!hasLoadedInitialPlayer.current) {
+      loadNextPlayer();
+      hasLoadedInitialPlayer.current = true;
+    }
   }, []);
 
   // Focus input when round starts
@@ -239,7 +244,12 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
     return (
       <div className="min-h-screen bg-dot p-4" style={{ background: 'var(--color-background)' }}>
         <div className="w-full max-w-4xl mx-auto">
-          {/* Header */}
+          {/* Centered Game Over Title and Subheader */}
+          <div className="text-center mb-4">
+            <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--header-color)' }}>Game Over</h1>
+            <p style={{ color: 'var(--subheader-color)' }}>{selectedDecadesLabel}</p>
+          </div>
+          {/* Header Row: Back Button */}
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={onBackToHome}
@@ -249,13 +259,8 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Home</span>
             </button>
-            <div className="text-center">
-              <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--header-color)' }}>Game Over</h1>
-              <p style={{ color: 'var(--subheader-color)' }}>{selectedDecadesLabel}</p>
-            </div>
             <div></div>
           </div>
-
           {/* Game Over Card */}
           <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8 text-center" style={{ background: 'var(--color-card-background)' }}>
             <div className="mb-8">
@@ -317,7 +322,12 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
   return (
     <div className="min-h-screen bg-dot p-4" style={{ background: 'var(--color-background)' }}>
       <div className="w-full max-w-4xl mx-auto">
-        {/* Header */}
+        {/* Centered Title and Round Info */}
+        <div className="text-center mb-4">
+          <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--header-color)' }}>Single Player</h1>
+          <p style={{ color: 'var(--subheader-color)' }}>Round {roundNumber} • {selectedDecadesLabel}</p>
+        </div>
+        {/* Header Row: Back and Score */}
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={onBackToHome}
@@ -328,19 +338,15 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
             <span>Back to Home</span>
           </button>
           <div className="text-center">
-            <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--header-color)' }}>Single Player</h1>
-            <p style={{ color: 'var(--subheader-color)' }}>Round {roundNumber} • {selectedDecadesLabel}</p>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-end space-x-8">
               <div className="text-center">
                 <div className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>{score}</div>
                 <div className="text-sm" style={{ color: 'var(--subheader-color)' }}>Score</div>
               </div>
               {highScore > 0 && (
                 <div className="text-center">
-                  <div className="text-xl font-bold" style={{ color: '#FFD600' }}>{highScore}</div>
-                  <div className="text-xs" style={{ color: 'var(--subheader-color)' }}>High Score</div>
+                  <div className="text-2xl font-bold" style={{ color: '#FFD600' }}>{highScore}</div>
+                  <div className="text-sm" style={{ color: 'var(--subheader-color)' }}>High Score</div>
                 </div>
               )}
             </div>

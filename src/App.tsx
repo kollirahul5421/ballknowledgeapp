@@ -9,6 +9,7 @@ import { SinglePlayerGame } from './components/SinglePlayerGame';
 import { SupabaseRoomManager } from './utils/supabaseRoomManager';
 import { useSupabaseRoomPolling } from './hooks/useSupabaseRoomPolling';
 import { GameState, Room, GameMode, MAX_PLAYERS, Decade } from './types/game';
+import { useLocation } from 'react-router-dom';
 
 function App() {
   const [gameState, setGameState] = useState<GameState>({
@@ -20,6 +21,21 @@ function App() {
   const [prefilledRoomCode, setPrefilledRoomCode] = useState<string>('');
 
   const roomManager = SupabaseRoomManager.getInstance();
+  const location = window.location;
+  const urlParams = new URLSearchParams(window.location.search);
+  const isAdminQuery = urlParams.get('admin') === 'true';
+
+  // Simple password protection for admin page
+  const [adminAuthed, setAdminAuthed] = useState(() => sessionStorage.getItem('adminAuthed') === 'true');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminError, setAdminError] = useState('');
+
+  useEffect(() => {
+    if (!isAdminQuery) {
+      setAdminAuthed(false);
+      sessionStorage.removeItem('adminAuthed');
+    }
+  }, [isAdminQuery]);
 
   // Check for room code in URL on mount
   useEffect(() => {
@@ -297,6 +313,45 @@ function App() {
   }
 
   // Render current view
+  if (isAdminQuery && !adminAuthed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-dot p-4" style={{ background: 'var(--color-background)' }}>
+        <form
+          onSubmit={e => {
+            e.preventDefault();
+            if (adminPassword === 'kamathkolli123') {
+              setAdminAuthed(true);
+              sessionStorage.setItem('adminAuthed', 'true');
+              setAdminError('');
+            } else {
+              setAdminError('Incorrect password.');
+            }
+          }}
+          className="bg-black border border-gray-700 rounded-2xl shadow-2xl p-8 w-full max-w-xs text-center"
+        >
+          <h2 className="mb-4 text-xl font-bold text-white">Admin Access</h2>
+          <input
+            type="password"
+            value={adminPassword}
+            onChange={e => setAdminPassword(e.target.value)}
+            placeholder="Enter admin password"
+            className="w-full mb-3 rounded-xl border border-gray-600 bg-gray-900 text-white px-4 py-2 text-center focus:outline-none focus:ring-2 focus:ring-orange-400"
+            autoFocus
+          />
+          <button
+            type="submit"
+            className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 mt-2 transition-all"
+          >
+            Enter
+          </button>
+          {adminError && <div className="mt-3 text-red-400 text-sm">{adminError}</div>}
+        </form>
+      </div>
+    );
+  }
+  if (isAdminQuery && adminAuthed) {
+    return <AdminPage onBackToHome={() => { sessionStorage.removeItem('adminAuthed'); window.location.href = '/'; }} />;
+  }
   switch (gameState.currentView) {
     case 'admin':
       return <AdminPage onBackToHome={handleBackFromAdmin} />;

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Users, Plus, LogIn, Trophy, Settings, ChevronDown, User } from 'lucide-react';
+import { Users, Plus, LogIn, Trophy, Settings, ChevronDown, User, X } from 'lucide-react';
 import { Decade, DECADES } from '../types/game';
 
 interface HomePageProps {
@@ -25,6 +25,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [selectedDecades, setSelectedDecades] = useState<Decade[]>([]); // empty = all
   const [showDecadeDropdown, setShowDecadeDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [showHowToPlay, setShowHowToPlay] = useState(true);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -85,8 +86,9 @@ export const HomePage: React.FC<HomePageProps> = ({
       : DECADES.filter(d => selectedDecades.includes(d.value)).map(d => d.label).join(', ');
 
   return (
-    <div className="min-h-screen bg-dot flex items-center justify-center p-4" style={{ background: 'var(--color-background)' }}>
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-dot flex flex-col lg:flex-row items-start justify-center p-4" style={{ background: 'var(--color-background)' }}>
+      {/* Main Content */}
+      <div className="w-full max-w-md mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3 shadow-lg" style={{ background: 'var(--color-primary)' }}>
@@ -176,7 +178,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </div>
               )}
               <p className="mt-1" style={{ fontSize: 'var(--label-font-size)', color: 'var(--subheader-color)' }}>
-                Choose which eras of players to include in your game. Selecting none means all decades.
+                Choose which eras of players to include in your game.
               </p>
             </div>
 
@@ -215,27 +217,93 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <LogIn className="w-5 h-5" />
                 <span>Join Game</span>
               </button>
-              <button
-                onClick={onShowAdmin}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center space-x-2 rounded-2xl transition-all duration-200"
-                style={{ background: 'var(--button-outline-background)', color: 'var(--button-outline-color)', fontWeight: 'var(--button-outline-font-weight)', boxShadow: 'var(--button-outline-shadow)', border: 'var(--button-outline-border)', borderRadius: 'var(--button-outline-border-radius)', fontSize: '1rem', padding: '0.75rem 1.5rem' }}
-              >
-                <Settings className="w-5 h-5" />
-                <span>Manage Players</span>
-              </button>
+            </div>
+            {/* Footer message inside card */}
+            <div className="text-center pt-2">
+              <div className="flex items-center justify-center space-x-2" style={{ color: 'var(--subheader-color)' }}>
+                <Users className="w-4 h-4" />
+                <span style={{ fontSize: 'var(--label-font-size)' }}>Challenge your friends to an NBA showdown!</span>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="text-center mt-6">
-          <div className="flex items-center justify-center space-x-2" style={{ color: 'var(--subheader-color)' }}>
-            <Users className="w-4 h-4" />
-            <span style={{ fontSize: 'var(--label-font-size)' }}>Challenge your friends to an NBA showdown!</span>
-          </div>
-        </div>
       </div>
+      {/* How to Play Sidebar */}
+      {showHowToPlay && (
+        <aside className="w-full lg:w-96 mt-8 lg:mt-0 lg:fixed lg:right-0 lg:top-1/2 lg:-translate-y-1/2 lg:h-auto lg:max-h-[90vh] lg:overflow-y-auto z-20">
+          <div className="rounded-2xl border shadow-xl p-6 m-4 lg:mr-8 relative" style={{ background: 'var(--color-card-background)', borderColor: 'var(--color-card-border)' }}>
+            <button
+              onClick={() => setShowHowToPlay(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-200 focus:outline-none"
+              aria-label="Hide How to Play"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--header-color)' }}>How to Play</h2>
+            <div className="space-y-4 text-sm">
+              <div>
+                <div className="font-bold mb-1 text-purple-400" style={{ color: 'var(--color-primary)' }}>Game Modes</div>
+                <ul className="list-disc ml-5">
+                  <li><b>Single Player:</b> Guess NBA players. You get 3 lives.</li>
+                  <li><b>Create/Join Game:</b> Play with 2–4 friends. Host starts the game.</li>
+                </ul>
+              </div>
+              <div>
+                <div className="font-bold mb-1 text-purple-400" style={{ color: 'var(--color-primary)' }}>Multiplayer Rules</div>
+                <ul className="list-disc ml-5">
+                  <li>2–4 players per lobby.</li>
+                  <li>First to 7 points wins.</li>
+                  <li>Both players can skip a player.</li>
+                </ul>
+              </div>
+              <div>
+                <div className="font-bold mb-1 text-purple-400" style={{ color: 'var(--color-primary)' }}>Answering</div>
+                <ul className="list-disc ml-5">
+                  <li>Enter first, last, or full name. Minor typos are OK.</li>
+                  <li>"Give Up" skips and costs a life (single player).</li>
+                </ul>
+              </div>
+              <div>
+                <div className="font-bold mb-1 text-purple-400" style={{ color: 'var(--color-primary)' }}>Other</div>
+                <ul className="list-disc ml-5">
+                  <li>Choose player eras (decades) when starting.</li>
+                  <li>Set a display name or leave blank.</li>
+                  <li>Suggestions? Use the form at bottom right.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </aside>
+      )}
+      {/* Persistent Footer */}
+      <footer className="w-full border-t border-gray-800 bg-black/80 text-gray-400 text-xs flex flex-col md:flex-row items-center justify-between gap-2 px-4 py-3 fixed bottom-0 left-0 z-30" style={{backdropFilter: 'blur(4px)'}}>
+        <div className="flex items-center gap-2">
+          {/* Company logo, smaller */}
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-7 h-7" fill="none">
+            <circle cx="24" cy="24" r="20" fill="var(--icon-basketball-color)" stroke="var(--icon-basketball-color)" strokeWidth="4" />
+            <path d="M24 4v40" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
+            <path d="M4 24h40" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
+            <path d="M8 12c8 8 24 8 32 0" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
+            <path d="M8 36c8-8 24-8 32 0" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
+          </svg>
+          <span>BallUpTop</span>
+        </div>
+        <div className="text-center flex-1 md:text-left">
+          <span>For entertainment purposes only. Not affiliated with the NBA.</span>
+        </div>
+        <div className="flex items-center gap-3">
+          {/* Placeholder for socials */}
+         <span className="ml-2">©2025</span>
+          <a
+            href="https://docs.google.com/forms/d/e/1FAIpQLSfe5hCnzAz6n5pRu6W22UmKjk-_SJ1orILc34bpNnCj2OxZlQ/viewform?usp=dialog"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-4 px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs shadow transition"
+          >
+            Submit Feedback
+          </a>
+        </div>
+      </footer>
     </div>
   );
 };
