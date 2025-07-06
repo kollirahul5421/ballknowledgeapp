@@ -28,6 +28,7 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [lastGuessResult, setLastGuessResult] = useState<'correct' | 'incorrect' | 'giveup' | null>(null);
+  const [showingLastLifeResult, setShowingLastLifeResult] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const playerManager = PlayerManager.getInstance();
 
@@ -46,10 +47,10 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
 
   // Focus input when round starts
   useEffect(() => {
-    if (!isRevealed && !isTransitioning && !gameOver && inputRef.current) {
+    if (!isRevealed && !isTransitioning && !gameOver && !showingLastLifeResult && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [isRevealed, roundNumber, isTransitioning, gameOver]);
+  }, [isRevealed, roundNumber, isTransitioning, gameOver, showingLastLifeResult]);
 
   const loadNextPlayer = async () => {
     setIsLoading(true);
@@ -76,6 +77,7 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
       setShowAnswer(false);
       setImageLoading(true);
       setLastGuessResult(null);
+      setShowingLastLifeResult(false);
     } catch (error) {
       console.error('Error loading next player:', error);
     } finally {
@@ -128,9 +130,18 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
     return matrix[str2.length][str1.length];
   };
 
+  const handleGameOver = () => {
+    // Update high score if current score is higher
+    if (score > highScore) {
+      setHighScore(score);
+      localStorage.setItem('nba-single-player-high-score', score.toString());
+    }
+    setGameOver(true);
+  };
+
   const handleSubmitGuess = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guess.trim() || isSubmitting || !currentPlayer || isRevealed || gameOver) {
+    if (!guess.trim() || isSubmitting || !currentPlayer || isRevealed || gameOver || showingLastLifeResult) {
       return;
     }
 
@@ -152,14 +163,14 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
       setIsRevealed(true);
       setShowAnswer(true);
       
-      // Check if game over
+      // Check if this was the last life
       if (newLives <= 0) {
-        setGameOver(true);
-        // Update high score if current score is higher
-        if (score > highScore) {
-          setHighScore(score);
-          localStorage.setItem('nba-single-player-high-score', score.toString());
-        }
+        setShowingLastLifeResult(true);
+        // Wait 3 seconds before showing game over screen
+        setTimeout(() => {
+          setShowingLastLifeResult(false);
+          handleGameOver();
+        }, 3000);
       }
     }
 
@@ -168,7 +179,7 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
   };
 
   const handleGiveUp = () => {
-    if (gameOver || isRevealed) return;
+    if (gameOver || isRevealed || showingLastLifeResult) return;
     
     const newLives = lives - 1;
     setLives(newLives);
@@ -176,19 +187,19 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
     setIsRevealed(true);
     setShowAnswer(true);
     
-    // Check if game over
+    // Check if this was the last life
     if (newLives <= 0) {
-      setGameOver(true);
-      // Update high score if current score is higher
-      if (score > highScore) {
-        setHighScore(score);
-        localStorage.setItem('nba-single-player-high-score', score.toString());
-      }
+      setShowingLastLifeResult(true);
+      // Wait 3 seconds before showing game over screen
+      setTimeout(() => {
+        setShowingLastLifeResult(false);
+        handleGameOver();
+      }, 3000);
     }
   };
 
   const handleNextRound = () => {
-    if (gameOver) return;
+    if (gameOver || showingLastLifeResult) return;
     
     setIsTransitioning(true);
     setRoundNumber(prev => prev + 1);
@@ -206,6 +217,7 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
     setUsedPlayerIds([]);
     setGameOver(false);
     setLastGuessResult(null);
+    setShowingLastLifeResult(false);
     setIsTransitioning(true);
     
     // Small delay to show transition state
@@ -412,12 +424,12 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
                         background: 'var(--input-background)', 
                         fontSize: 'var(--input-font-size)' 
                       }}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || showingLastLifeResult}
                       maxLength={50}
                     />
                     <button
                       type="submit"
-                      disabled={!guess.trim() || isSubmitting}
+                      disabled={!guess.trim() || isSubmitting || showingLastLifeResult}
                       className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg hover:shadow-xl disabled:shadow-none"
                     >
                       {isSubmitting ? (
@@ -434,8 +446,8 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
               <div className="text-center">
                 <button
                   onClick={handleGiveUp}
-                  disabled={isSubmitting}
-                  className="font-semibold px-6 py-2 rounded-xl transition-all duration-200 shadow-lg"
+                  disabled={isSubmitting || showingLastLifeResult}
+                  className="font-semibold px-6 py-2 rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50"
                   style={{ background: 'var(--chip-neutral-background)', color: 'var(--color-text)' }}
                 >
                   Give Up
@@ -465,12 +477,19 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
                     <p style={{ color: 'var(--chip-error-color)' }}>
                       That was <span className="font-bold">{currentPlayer.name}</span>
                     </p>
+                    {showingLastLifeResult && (
+                      <div className="mt-4">
+                        <div className="animate-pulse text-sm" style={{ color: 'var(--chip-error-color)' }}>
+                          Game ending in a moment...
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Next Round Button (only if not game over) */}
-              {!gameOver && (
+              {/* Next Round Button (only if not game over and not showing last life result) */}
+              {!gameOver && !showingLastLifeResult && (
                 <button
                   onClick={handleNextRound}
                   className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
