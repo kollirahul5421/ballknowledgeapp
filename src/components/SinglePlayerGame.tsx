@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, AlertCircle, CheckCircle, X, RotateCcw, Home } from 'lucide-react';
+import { ArrowLeft, AlertCircle, CheckCircle, X, RotateCcw, Home, Heart, Trophy } from 'lucide-react';
 import { PlayerManager } from '../utils/playerManager';
 import { Player } from '../types/player';
 import { Decade } from '../types/game';
@@ -17,17 +17,27 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
   const [guess, setGuess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
-  const [guessAttempts, setGuessAttempts] = useState<Array<{ guess: string; isCorrect: boolean; timestamp: number }>>([]);
-  const [showIncorrectFeedback, setShowIncorrectFeedback] = useState(false);
   const [score, setScore] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [highScore, setHighScore] = useState(0);
   const [roundNumber, setRoundNumber] = useState(1);
   const [usedPlayerIds, setUsedPlayerIds] = useState<string[]>([]);
   const [isRevealed, setIsRevealed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showAnswer, setShowAnswer] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [lastGuessResult, setLastGuessResult] = useState<'correct' | 'incorrect' | 'giveup' | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const playerManager = PlayerManager.getInstance();
+
+  // Load high score from localStorage on mount
+  useEffect(() => {
+    const savedHighScore = localStorage.getItem('nba-single-player-high-score');
+    if (savedHighScore) {
+      setHighScore(parseInt(savedHighScore, 10));
+    }
+  }, []);
 
   // Load first player on mount
   useEffect(() => {
@@ -36,10 +46,10 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
 
   // Focus input when round starts
   useEffect(() => {
-    if (!isRevealed && !isTransitioning && inputRef.current) {
+    if (!isRevealed && !isTransitioning && !gameOver && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [isRevealed, roundNumber, isTransitioning]);
+  }, [isRevealed, roundNumber, isTransitioning, gameOver]);
 
   const loadNextPlayer = async () => {
     setIsLoading(true);
@@ -62,11 +72,10 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
       
       // Reset round state
       setGuess('');
-      setGuessAttempts([]);
-      setShowIncorrectFeedback(false);
       setIsRevealed(false);
       setShowAnswer(false);
       setImageLoading(true);
+      setLastGuessResult(null);
     } catch (error) {
       console.error('Error loading next player:', error);
     } finally {
@@ -121,49 +130,66 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
 
   const handleSubmitGuess = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guess.trim() || isSubmitting || !currentPlayer || isRevealed) {
+    if (!guess.trim() || isSubmitting || !currentPlayer || isRevealed || gameOver) {
       return;
     }
 
     setIsSubmitting(true);
-    setShowIncorrectFeedback(false);
 
     const isCorrect = isCorrectGuess(guess.trim(), currentPlayer.name);
     
-    // Add to attempts history
-    const newAttempt = {
-      guess: guess.trim(),
-      isCorrect,
-      timestamp: Date.now()
-    };
-    setGuessAttempts(prev => [...prev, newAttempt]);
-
     if (isCorrect) {
-      // Correct guess - update score and reveal
+      // Correct guess - add point and reveal
       setScore(prev => prev + 1);
+      setLastGuessResult('correct');
       setIsRevealed(true);
       setShowAnswer(true);
-      setGuess('');
     } else {
-      // Incorrect guess - show feedback and allow retry
-      setShowIncorrectFeedback(true);
-      setGuess('');
+      // Incorrect guess - lose a life and reveal
+      const newLives = lives - 1;
+      setLives(newLives);
+      setLastGuessResult('incorrect');
+      setIsRevealed(true);
+      setShowAnswer(true);
       
-      // Hide feedback after 3 seconds
-      setTimeout(() => {
-        setShowIncorrectFeedback(false);
-      }, 3000);
+      // Check if game over
+      if (newLives <= 0) {
+        setGameOver(true);
+        // Update high score if current score is higher
+        if (score > highScore) {
+          setHighScore(score);
+          localStorage.setItem('nba-single-player-high-score', score.toString());
+        }
+      }
     }
 
+    setGuess('');
     setIsSubmitting(false);
   };
 
   const handleGiveUp = () => {
+    if (gameOver || isRevealed) return;
+    
+    const newLives = lives - 1;
+    setLives(newLives);
+    setLastGuessResult('giveup');
     setIsRevealed(true);
     setShowAnswer(true);
+    
+    // Check if game over
+    if (newLives <= 0) {
+      setGameOver(true);
+      // Update high score if current score is higher
+      if (score > highScore) {
+        setHighScore(score);
+        localStorage.setItem('nba-single-player-high-score', score.toString());
+      }
+    }
   };
 
   const handleNextRound = () => {
+    if (gameOver) return;
+    
     setIsTransitioning(true);
     setRoundNumber(prev => prev + 1);
     
@@ -173,10 +199,13 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
     }, 500);
   };
 
-  const handleRestart = () => {
+  const handlePlayAgain = () => {
     setScore(0);
+    setLives(3);
     setRoundNumber(1);
     setUsedPlayerIds([]);
+    setGameOver(false);
+    setLastGuessResult(null);
     setIsTransitioning(true);
     
     // Small delay to show transition state
@@ -203,6 +232,88 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
     ? 'All Players' 
     : decades.map(d => `${d} Era`).join(', ');
 
+  // Game Over Screen
+  if (gameOver) {
+    const isNewHighScore = score === highScore && score > 0;
+    
+    return (
+      <div className="min-h-screen bg-dot p-4" style={{ background: 'var(--color-background)' }}>
+        <div className="w-full max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={onBackToHome}
+              className="flex items-center space-x-2"
+              style={{ color: 'var(--color-primary)' }}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Home</span>
+            </button>
+            <div className="text-center">
+              <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--header-color)' }}>Game Over</h1>
+              <p style={{ color: 'var(--subheader-color)' }}>{selectedDecadesLabel}</p>
+            </div>
+            <div></div>
+          </div>
+
+          {/* Game Over Card */}
+          <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8 text-center" style={{ background: 'var(--color-card-background)' }}>
+            <div className="mb-8">
+              {isNewHighScore ? (
+                <div className="inline-flex items-center justify-center w-24 h-24 rounded-full mb-6" style={{ background: '#FFF9C4' }}>
+                  <Trophy className="w-12 h-12" style={{ color: '#FFD600' }} />
+                </div>
+              ) : (
+                <div className="inline-flex items-center justify-center w-24 h-24 rounded-full mb-6" style={{ background: '#FEF2F2' }}>
+                  <X className="w-12 h-12" style={{ color: '#EF4444' }} />
+                </div>
+              )}
+              
+              <h2 className="mb-4" style={{ fontSize: '2.25rem', fontWeight: 'bold', color: isNewHighScore ? '#FFD600' : 'var(--header-color)' }}>
+                {isNewHighScore ? 'New High Score!' : 'Game Over'}
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 max-w-md mx-auto">
+                <div className="rounded-xl p-6" style={{ background: 'var(--color-background)' }}>
+                  <div className="text-3xl font-bold mb-2" style={{ color: 'var(--color-primary)' }}>{score}</div>
+                  <div className="text-sm" style={{ color: 'var(--subheader-color)' }}>Final Score</div>
+                </div>
+                
+                <div className="rounded-xl p-6" style={{ background: 'var(--color-background)' }}>
+                  <div className="text-3xl font-bold mb-2" style={{ color: '#FFD600' }}>{highScore}</div>
+                  <div className="text-sm" style={{ color: 'var(--subheader-color)' }}>High Score</div>
+                </div>
+              </div>
+
+              <p className="mb-8" style={{ fontSize: '1.125rem', color: 'var(--subheader-color)' }}>
+                You answered {score} player{score !== 1 ? 's' : ''} correctly in {roundNumber - 1} round{roundNumber - 1 !== 1 ? 's' : ''}!
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={handlePlayAgain}
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              >
+                <RotateCcw className="w-5 h-5 inline mr-2" />
+                Play Again
+              </button>
+
+              <button
+                onClick={onBackToHome}
+                className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              >
+                <Home className="w-5 h-5 inline mr-2" />
+                Home
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-dot p-4" style={{ background: 'var(--color-background)' }}>
       <div className="w-full max-w-4xl mx-auto">
@@ -221,8 +332,31 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
             <p style={{ color: 'var(--subheader-color)' }}>Round {roundNumber} • {selectedDecadesLabel}</p>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>{score}</div>
-            <div className="text-sm" style={{ color: 'var(--subheader-color)' }}>Score</div>
+            <div className="flex items-center space-x-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>{score}</div>
+                <div className="text-sm" style={{ color: 'var(--subheader-color)' }}>Score</div>
+              </div>
+              {highScore > 0 && (
+                <div className="text-center">
+                  <div className="text-xl font-bold" style={{ color: '#FFD600' }}>{highScore}</div>
+                  <div className="text-xs" style={{ color: 'var(--subheader-color)' }}>High Score</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Lives Display */}
+        <div className="flex justify-center mb-6">
+          <div className="flex items-center space-x-2 px-4 py-2 rounded-xl" style={{ background: 'var(--color-card-background)' }}>
+            <span className="text-sm font-medium" style={{ color: 'var(--subheader-color)' }}>Lives:</span>
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Heart
+                key={index}
+                className={`w-5 h-5 ${index < lives ? 'fill-red-500 text-red-500' : 'text-gray-400'}`}
+              />
+            ))}
           </div>
         </div>
 
@@ -270,14 +404,12 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
                       value={guess}
                       onChange={(e) => setGuess(e.target.value)}
                       placeholder="Enter player name..."
-                      className={`flex-1 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder-gray-500 text-sm ${
-                        showIncorrectFeedback ? 'border-red-500 bg-red-50' : ''
-                      }`}
+                      className="flex-1 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder-gray-500 text-sm"
                       style={{ 
                         padding: '0.75rem 1rem', 
-                        border: showIncorrectFeedback ? '2px solid #EF4444' : 'var(--input-border)', 
+                        border: 'var(--input-border)', 
                         color: 'var(--input-color)', 
-                        background: showIncorrectFeedback ? '#FEF2F2' : 'var(--input-background)', 
+                        background: 'var(--input-background)', 
                         fontSize: 'var(--input-font-size)' 
                       }}
                       disabled={isSubmitting}
@@ -295,46 +427,8 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
                       )}
                     </button>
                   </div>
-                  
-                  {/* Incorrect Feedback */}
-                  {showIncorrectFeedback && (
-                    <div className="mt-3 flex items-center space-x-2 text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
-                      <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                      <span className="text-sm font-medium">Incorrect guess! Try again.</span>
-                    </div>
-                  )}
                 </div>
               </form>
-
-              {/* Previous Attempts */}
-              {guessAttempts.length > 0 && (
-                <div className="mb-6 max-w-md mx-auto">
-                  <h4 className="text-sm font-medium mb-2 text-center" style={{ color: 'var(--subheader-color)' }}>
-                    Your attempts:
-                  </h4>
-                  <div className="space-y-2">
-                    {guessAttempts.slice(-3).map((attempt, index) => (
-                      <div
-                        key={index}
-                        className={`flex items-center justify-between p-2 rounded-lg text-sm ${
-                          attempt.isCorrect 
-                            ? 'bg-green-50 border border-green-200' 
-                            : 'bg-red-50 border border-red-200'
-                        }`}
-                      >
-                        <span className={attempt.isCorrect ? 'text-green-700' : 'text-red-700'}>
-                          {attempt.guess}
-                        </span>
-                        {attempt.isCorrect ? (
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <X className="w-4 h-4 text-red-600" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Give Up Button */}
               <div className="text-center">
@@ -352,11 +446,11 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
             <div className="text-center">
               {/* Result Message */}
               <div className="mb-6">
-                {guessAttempts.some(a => a.isCorrect) ? (
+                {lastGuessResult === 'correct' ? (
                   <div className="rounded-xl p-6" style={{ background: 'var(--chip-success-background)' }}>
                     <CheckCircle className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--chip-success-color)' }} />
                     <h3 className="text-2xl font-bold mb-2" style={{ color: 'var(--chip-success-color)' }}>
-                      Correct!
+                      Correct! +1 Point
                     </h3>
                     <p style={{ color: 'var(--chip-success-color)' }}>
                       That was <span className="font-bold">{currentPlayer.name}</span>
@@ -364,38 +458,26 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
                   </div>
                 ) : (
                   <div className="rounded-xl p-6" style={{ background: 'var(--chip-error-background)' }}>
+                    <X className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--chip-error-color)' }} />
                     <h3 className="text-2xl font-bold mb-2" style={{ color: 'var(--chip-error-color)' }}>
-                      That was {currentPlayer.name}
+                      {lastGuessResult === 'giveup' ? 'You gave up!' : 'Incorrect!'} -1 Life
                     </h3>
+                    <p style={{ color: 'var(--chip-error-color)' }}>
+                      That was <span className="font-bold">{currentPlayer.name}</span>
+                    </p>
                   </div>
                 )}
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {/* Next Round Button (only if not game over) */}
+              {!gameOver && (
                 <button
                   onClick={handleNextRound}
                   className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
                 >
                   Next Player
                 </button>
-
-                <button
-                  onClick={handleRestart}
-                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                >
-                  <RotateCcw className="w-5 h-5 inline mr-2" />
-                  Restart
-                </button>
-
-                <button
-                  onClick={onBackToHome}
-                  className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                >
-                  <Home className="w-5 h-5 inline mr-2" />
-                  Home
-                </button>
-              </div>
+              )}
             </div>
           )}
         </div>
