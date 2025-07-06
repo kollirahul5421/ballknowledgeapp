@@ -233,7 +233,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome }) => {
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g., LeBron James"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-gray-900"
                     required
                   />
                 </div>
@@ -247,7 +247,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome }) => {
                     value={formData.team}
                     onChange={(e) => setFormData(prev => ({ ...prev, team: e.target.value }))}
                     placeholder="e.g., Los Angeles Lakers"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-gray-900"
                     required
                   />
                 </div>
@@ -260,7 +260,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome }) => {
                 <select
                   value={formData.primaryDecade}
                   onChange={(e) => setFormData(prev => ({ ...prev, primaryDecade: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-gray-900"
                   required
                 >
                   {DECADES.map(decade => (
@@ -283,7 +283,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome }) => {
                   value={formData.imageUrl}
                   onChange={(e) => setFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
                   placeholder="https://example.com/player-image.jpg"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-gray-900"
                   required
                 />
                 {formData.imageUrl && (

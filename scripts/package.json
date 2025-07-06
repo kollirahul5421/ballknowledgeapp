@@ -6,13 +6,24 @@
   "scripts": {
     "upload": "node bulk-upload-players.js",
     "upload:50": "node bulk-upload-players.js 50",
-    "upload:100": "node bulk-upload-players.js 100"
+    "upload:100": "node bulk-upload-players.js 100",
+    "add-local": "npx ts-node addNewPlayersFromLocal.ts",
+    "add-players": "npx ts-node addPlayersFromInput.ts",
+    "upload-players": "npx ts-node uploadPlayersToSupabase.ts",
+    "upload-players:2000s": "npx ts-node uploadPlayersToSupabase.ts 2000s",
+    "upload-players:2010s": "npx ts-node uploadPlayersToSupabase.ts 2010s",
+    "verify-ids": "npx ts-node verifyPlayerIds.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.6.1"
   },
-  "keywords": ["nba", "players", "supabase", "bulk-upload"],
+  "keywords": [
+    "nba",
+    "players",
+    "supabase",
+    "bulk-upload"
+  ],
   "author": "",
   "license": "MIT"
 }

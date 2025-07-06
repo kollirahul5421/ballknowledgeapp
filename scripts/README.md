@@ -1,151 +1,104 @@
-# NBA Players Bulk Upload Script
+# NBA Players Scripts
 
-This script bulk uploads NBA players to your Supabase database for the NBA Head-to-Head guessing game.
+This directory contains scripts for managing NBA players data in the Supabase database.
 
-## Features
+## Player Data Structure
 
-- ✅ Uploads 100 obscure NBA players (avoiding superstars)
-- ✅ Handles duplicates gracefully (skips existing players)
-- ✅ Uses realistic team assignments
-- ✅ Provides valid image URLs
-- ✅ Reusable - can run multiple times safely
-- ✅ Progress tracking and detailed reporting
+The cleaned player data is now stored in `playerData.ts` with the following structure:
 
-## Setup Instructions
+```typescript
+interface PlayerData {
+  name: string;
+  team: string;
+  nbaPlayerId: number;
+  imageUrl: string;
+  primaryDecade: string;
+}
+```
 
-### 1. Navigate to Scripts Directory
+### Key Changes Made:
+- ✅ Removed `alternateNames` field
+- ✅ Added proper `nbaPlayerId` for each player
+- ✅ Updated `imageUrl` to use official NBA headshots
+- ✅ Maintained `name`, `team`, and `primaryDecade` fields
+
+## Available Scripts
+
+### Verification
 ```bash
-cd scripts
+npm run verify-ids
 ```
+Verifies that all players have correct NBA IDs and checks for duplicates.
 
-### 2. Install Dependencies
+### Upload to Supabase
 ```bash
-npm install
+# Upload all players
+npm run upload-players
+
+# Upload specific decades
+npm run upload-players:2000s
+npm run upload-players:2010s
 ```
 
-### 3. Environment Variables
-Make sure your `.env` file in the root directory contains:
-```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
+The upload scripts will:
+- Check for existing players to avoid duplicates
+- Upload in batches of 50 players
+- Provide detailed logging of the upload process
+- Handle errors gracefully
 
-The script will automatically read these from your existing `.env` file.
+## Player Categories
 
-## Usage
+### 2010s Deep Bench Players (20 players)
+Players who averaged less than 15 minutes per game in the 2010s, including:
+- James Jones, Mike Miller, Shane Battier
+- Role players and bench contributors
+- Some notable draft busts (Darko Miličić, Kwame Brown, etc.)
 
-### Basic Usage (100 players)
-```bash
-npm run upload
-```
-
-### Custom Number of Players
-```bash
-# Upload 50 players
-npm run upload:50
-
-# Upload specific number
-node bulk-upload-players.js 25
-```
-
-### Direct Node.js Execution
-```bash
-# Upload 100 players (default)
-node bulk-upload-players.js
-
-# Upload custom number
-node bulk-upload-players.js 75
-```
-
-## What the Script Does
-
-1. **Connects to Supabase** using your existing environment variables
-2. **Checks for duplicates** before inserting each player
-3. **Assigns random teams** from current NBA teams
-4. **Generates image URLs** using a mix of NBA CDN format and placeholder images
-5. **Provides detailed progress** with colored console output
-6. **Handles errors gracefully** and continues processing
-7. **Reports final statistics** showing added, skipped, and failed insertions
-
-## Sample Output
-
-```
-🏀 Starting bulk upload of 100 NBA players...
-📊 Checking existing players in database...
-
-⚠️  Player "Bol Bol" already exists, skipping...
-✅ Successfully added: Tacko Fall (Boston Celtics)
-✅ Successfully added: Carsen Edwards (Miami Heat)
-...
-
-==================================================
-🏀 BULK UPLOAD COMPLETE!
-==================================================
-✅ Successfully added: 87 players
-⚠️  Skipped (duplicates): 13 players
-❌ Errors: 0 players
-📊 Total processed: 100 players
-==================================================
-
-🎉 Your NBA guessing game now has more players to challenge users!
-```
-
-## Player Selection Strategy
-
-The script focuses on **obscure players** to make the guessing game more challenging:
-
-- Current NBA bench players
-- Recent draft picks
-- Role players and specialists
-- International players
-- G-League call-ups
-- Rookie and sophomore players
-
-This avoids superstars like LeBron, Curry, Durant, etc., making the game more interesting for NBA fans.
-
-## Error Handling
-
-- **Duplicate names**: Automatically skipped with warning
-- **Network errors**: Logged and script continues
-- **Invalid data**: Logged with details
-- **Missing environment variables**: Script exits with clear error message
-
-## Customization
-
-You can modify the script to:
-
-- Add your own player list in the `OBSCURE_NBA_PLAYERS` array
-- Change team assignments in the `NBA_TEAMS` array
-- Modify image URL generation in `generateNBAImageUrl()`
-- Adjust the delay between insertions (currently 100ms)
-
-## Troubleshooting
-
-### "Missing Supabase environment variables"
-- Ensure your `.env` file exists in the root directory
-- Check that `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set
-
-### "Error inserting player"
-- Check your Supabase RLS policies allow public insert
-- Verify your database connection
-- Ensure the `players` table exists with correct schema
-
-### Script runs but no players added
-- Check if all players already exist in your database
-- Try running with a higher number: `node bulk-upload-players.js 200`
+### 2000s Role Players (20 players)
+Players who averaged less than 20 minutes per game in the 2000s, including:
+- Eric Snow, Aaron McKie, Tyrone Hill
+- Championship role players
+- Hall of Famers in their later years (Gary Payton, Karl Malone, etc.)
 
 ## Database Schema
 
-The script expects this table structure:
-```sql
-CREATE TABLE players (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text UNIQUE NOT NULL,
-  team text NOT NULL,
-  image_url text NOT NULL,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
+The Supabase `nba_players` table expects:
+- `name`: Player's full name
+- `team`: Current team (or "Retired")
+- `nba_player_id`: Official NBA player ID
+- `image_url`: URL to player's headshot
+- `decade`: Primary decade (2000s or 2010s)
+
+## Environment Variables
+
+Make sure you have these environment variables set:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+## Usage Example
+
+1. First, verify the data:
+```bash
+cd scripts
+npm run verify-ids
 ```
 
-This matches your existing database schema.
+2. Upload to Supabase:
+```bash
+npm run upload-players
+```
+
+3. Check specific decades:
+```bash
+npm run upload-players:2000s
+npm run upload-players:2010s
+```
+
+
+
+## Notes
+
+- All NBA IDs have been verified and are ready for upload
+- Image URLs use the official NBA CDN format
+- The upload script prevents duplicates by checking both NBA ID and player name
+- Players are uploaded in batches to avoid rate limiting
