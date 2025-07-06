@@ -90,7 +90,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* Main Content */}
       <div className="w-full max-w-md mx-auto">
         {/* Header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-6 pt-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3 shadow-lg" style={{ background: 'var(--color-primary)' }}>
             {/* Basketball SVG icon, purple, with longer lines, not clipped */}
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-12 h-12" fill="none">
@@ -276,31 +276,30 @@ export const HomePage: React.FC<HomePageProps> = ({
         </aside>
       )}
       {/* Persistent Footer */}
-      <footer className="w-full border-t border-gray-800 bg-black/80 text-gray-400 text-xs flex flex-col md:flex-row items-center justify-between gap-2 px-4 py-3 fixed bottom-0 left-0 z-30" style={{backdropFilter: 'blur(4px)'}}>
-        <div className="flex items-center gap-2">
+      <footer className="w-full border-t border-gray-800 bg-black/80 text-gray-400 text-[11px] flex flex-wrap items-center justify-between gap-x-2 gap-y-1 px-2 py-2 md:py-4 fixed bottom-0 left-0 z-30" style={{backdropFilter: 'blur(4px)'}}>
+        <div className="flex items-center gap-1 min-w-0">
           {/* Company logo, smaller */}
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-7 h-7" fill="none">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5 flex-shrink-0" fill="none">
             <circle cx="24" cy="24" r="20" fill="var(--icon-basketball-color)" stroke="var(--icon-basketball-color)" strokeWidth="4" />
             <path d="M24 4v40" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
             <path d="M4 24h40" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
             <path d="M8 12c8 8 24 8 32 0" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
             <path d="M8 36c8-8 24-8 32 0" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
           </svg>
-          <span>BallUpTop</span>
+          <span className="font-semibold truncate max-w-[80px]">BallUpTop</span>
         </div>
-        <div className="text-center flex-1 md:text-left">
-          <span>For entertainment purposes only. Not affiliated with the NBA.</span>
+        <div className="flex-1 min-w-0 text-left truncate hidden xs:inline md:block md:truncate">
+          <span className="truncate">For entertainment purposes only. Not affiliated with the NBA.</span>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Placeholder for socials */}
-         <span className="ml-2">©2025</span>
+        <div className="flex items-center gap-2 min-w-0 ml-auto">
+          <span className="truncate">©2025</span>
           <a
             href="https://docs.google.com/forms/d/e/1FAIpQLSfe5hCnzAz6n5pRu6W22UmKjk-_SJ1orILc34bpNnCj2OxZlQ/viewform?usp=dialog"
             target="_blank"
             rel="noopener noreferrer"
-            className="ml-4 px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs shadow transition"
+            className="px-2 py-0.5 rounded bg-purple-600 hover:bg-purple-700 text-white font-semibold text-[11px] shadow transition whitespace-nowrap"
           >
-            Submit Feedback
+            Feedback
           </a>
         </div>
       </footer>
