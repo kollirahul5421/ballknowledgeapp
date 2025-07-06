@@ -166,11 +166,11 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
       // Check if this was the last life
       if (newLives <= 0) {
         setShowingLastLifeResult(true);
-        // Wait 3 seconds before showing game over screen
+        // Wait 2 seconds before showing game over screen
         setTimeout(() => {
           setShowingLastLifeResult(false);
           handleGameOver();
-        }, 3000);
+        }, 2000);
       }
     }
 
@@ -190,11 +190,11 @@ export const SinglePlayerGame: React.FC<SinglePlayerGameProps> = ({
     // Check if this was the last life
     if (newLives <= 0) {
       setShowingLastLifeResult(true);
-      // Wait 3 seconds before showing game over screen
+      // Wait 2 seconds before showing game over screen
       setTimeout(() => {
         setShowingLastLifeResult(false);
         handleGameOver();
-      }, 3000);
+      }, 2000);
     }
   };
 
