@@ -12,7 +12,8 @@
     "upload-players": "npx ts-node uploadPlayersToSupabase.ts",
     "upload-players:2000s": "npx ts-node uploadPlayersToSupabase.ts 2000s",
     "upload-players:2010s": "npx ts-node uploadPlayersToSupabase.ts 2010s",
-    "verify-ids": "npx ts-node verifyPlayerIds.ts"
+    "verify-ids": "npx ts-node verifyPlayerIds.ts",
+    "analytics": "npx ts-node checkGameAnalytics.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
